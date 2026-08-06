@@ -131,6 +131,9 @@ def assemble_schedule_document(
     # Cost summary from the Schedule entity's summary_metrics
     # ------------------------------------------------------------------
     sm = schedule.get("summary_metrics", {})
+    # W2.2 Part B — the rollups ride in the Schedule entity's own summary, which
+    # is what lets this assembler read them without a second producer.
+    statistics = _statistics_block(sm.get("statistics"))
     production = float(sm.get("production_cost", 0.0))
     cost_summary = CostSummary(
         total=float(sm.get("total_cost", 0.0)),
@@ -255,6 +258,8 @@ def assemble_schedule_document(
             next_open_gap=row_gap.get(rid),
         ))
     lanes.sort(key=lambda r: (r.external_name or "", r.resource_id))
+    # W2.2 B2 — board-scope utilization onto the lanes it belongs to.
+    _apply_utilization(lanes, sm.get("statistics"))
 
     # ------------------------------------------------------------------
     # Annotations: locks + scenario lineage
@@ -296,6 +301,7 @@ def assemble_schedule_document(
             pool=pool_block,
         ),
         interaction=interaction,
+        statistics=statistics,
     )
 
 
@@ -751,6 +757,10 @@ def assemble_rolling_document(
                          # the ONE window it belongs to.
                          progress=_progress_block_from_view(view))
 
+    # W2.2 Part B — the three rollups, off the view the extractor filled.
+    statistics = _statistics_block(getattr(view, "statistics", None))
+    _apply_utilization(lanes, getattr(view, "statistics", None))
+
     return ScheduleDocument(
         contract_version=CONTRACT_VERSION,
         schedule_id=schedule_id, snapshot_id=plant.snapshot_id, run_id=run_id,
@@ -760,6 +770,7 @@ def assemble_rolling_document(
         resources=lanes, assignments=asgn_blocks, service_outcomes=svc_blocks,
         annotations=Annotations(),
         interaction=interaction,
+        statistics=statistics,
         rolling=rolling,
     )
 
@@ -849,6 +860,40 @@ def _solver_block(evidence: list[dict]) -> SolverBlock:
     )
 
 
+def _statistics_block(stats: Any) -> Any:
+    """The contract-1.17 statistics block, from the payload the extractor built.
+
+    ONE composer, two sources — the rolling assembler reads the payload off the
+    view, the monolithic one out of the Schedule's ``summary_metrics``. None on
+    a run that predates the rollups: an empty block would state 0 late orders on
+    a book nobody counted, which is a claim about the plant made from a fact
+    about our storage.
+    """
+    from mre.contracts.schedule_document import PlanStatisticsBlock
+    if not stats:
+        return None
+    return PlanStatisticsBlock(**{
+        k: v for k, v in stats.items()
+        if k in PlanStatisticsBlock.model_fields
+    })
+
+
+def _apply_utilization(lanes: list, stats: Any) -> None:
+    """Stamp per-resource utilization onto the lanes it belongs to.
+
+    In place, and only where the payload has a row: a lane the statistics never
+    saw keeps three Nones rather than three zeroes.
+    """
+    by_res = (stats or {}).get("utilization_by_resource") or {}
+    for lane in lanes:
+        u = by_res.get(lane.resource_id)
+        if not u:
+            continue
+        lane.working_minutes = u.get("working_minutes")
+        lane.open_capacity_minutes = u.get("open_capacity_minutes")
+        lane.utilization = u.get("utilization")
+
+
 def _progress_block_from_view(view: Any) -> Any:
     """The R-SP1 trail for the rolling path, read off the completed view.
 
@@ -863,7 +908,13 @@ def _progress_block_from_view(view: Any) -> Any:
     return SolveProgressBlock(**progress_block_fields(
         trail, best_bound=getattr(view, "best_bound", None),
         gap=getattr(view, "gap", None),
-        window_key=view.window_start.isoformat()))
+        window_key=view.window_start.isoformat(),
+        # R-SP1 AMENDMENT 1 — both endpoints or neither. `price_summary`
+        # refuses a half-priced story, so a view that could not price its first
+        # plan renders the objective-space percentage exactly as before.
+        first_plan_cost=getattr(view, "first_plan_cost", None),
+        final_plan_cost=(getattr(view, "cost_ledger", None) or {}).get("total_cost"),
+        wall_truncated=bool(getattr(view, "wall_truncated", False))))
 
 
 def _progress_block_from_evidence(evidence: list[dict], run_id) -> Any:
@@ -890,7 +941,10 @@ def _progress_block_from_evidence(evidence: list[dict], run_id) -> Any:
     p = max(recs, key=lambda r: r.get("timestamp", "")).get("payload", {})
     return SolveProgressBlock(**progress_block_fields(
         p.get("incumbents") or [], best_bound=p.get("best_bound"),
-        gap=p.get("gap"), window_key=p.get("window_key")))
+        gap=p.get("gap"), window_key=p.get("window_key"),
+        first_plan_cost=p.get("first_plan_cost"),
+        final_plan_cost=p.get("final_plan_cost"),
+        wall_truncated=bool(p.get("wall_truncated"))))
 
 def _reference_date(evidence: list[dict]) -> Optional[datetime]:
     m3 = _latest_run_open(evidence, "M3")

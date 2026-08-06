@@ -24,6 +24,9 @@ const money = (n) => (n == null ? "—"
 const units = (n) => (n == null ? "—" : Math.round(n).toLocaleString("en-US"));
 const pct = (n) => (n == null ? "—" : `${n.toFixed(1)}%`);
 const secs = (n) => (n == null ? "—" : `${n.toFixed(2)}s`);
+// Minutes, as minutes. Never converted to a span — working time and elapsed
+// span are different quantities (4B.20) and this one is working time.
+const mins = (n) => (n == null ? "—" : `${Math.round(n).toLocaleString("en-US")} min`);
 
 // How many trail rows the TABLE shows. The curve is never capped.
 const TABLE_ROWS = 12;
@@ -142,6 +145,34 @@ function renderProgress(pr) {
   head.textContent = pr.sentence;
   box.appendChild(head);
 
+  // R-SP1 AMENDMENT 1 — THE DOLLAR PAIR, when both endpoints are ledger-priced.
+  // The two figures are real costs of real solver-produced plans, so their
+  // difference is ledger arithmetic end to end and currency is admissible. It
+  // renders ABOVE the trail zone and outside it, because the zone below is the
+  // scaled objective's and money may not enter it.
+  if (pr.priced) {
+    const pair = el("div", "sm-priced");
+    pair.id = "sm-priced";
+    const row = (lbl, v) => {
+      const d = el("div", "sm-priced-row");
+      d.appendChild(el("span", "sm-priced-lbl", lbl));
+      d.appendChild(el("span", "sm-priced-num", money(v)));
+      return d;
+    };
+    pair.append(row("the solver's first workable plan would have cost",
+                    pr.firstPlanCost),
+                row("the finished plan costs", pr.finalPlanCost));
+    const saved = el("div", "sm-priced-row sm-priced-delta");
+    saved.appendChild(el("span", "sm-priced-lbl",
+      "the search took off its own first plan"));
+    saved.appendChild(el("span", "sm-priced-num",
+      `${money(pr.dollarImprovementAbs)}`
+      + (pr.dollarImprovementPct == null ? ""
+         : ` · ${pct(pr.dollarImprovementPct)}`)));
+    pair.appendChild(saved);
+    box.appendChild(pair);
+  }
+
   // R-SP1 clause (2) and (3), VERBATIM from the server block. The cockpit does
   // not compose this wording; if these strings are ever empty the screen says
   // less, it never says more.
@@ -153,6 +184,17 @@ function renderProgress(pr) {
   lbl3.textContent = pr.clause3;
   box.append(lbl2, lbl3);
 
+  // R-SP1 AMENDMENT 1's wall-cost disclosure. Capture costs wall time, and on a
+  // wall-limited solve that is a fact about the plan the planner is looking at.
+  // Empty (and absent) where it does not apply — under a deterministic budget
+  // the search is unaffected and there is nothing to disclose.
+  if (pr.captureNote) {
+    const cn = el("p", "sm-note");
+    cn.id = "sm-capture-note";
+    cn.textContent = pr.captureNote;
+    box.appendChild(cn);
+  }
+
   // Clause (1): the trail belongs to ONE window and says so, because two
   // windows' trails are two solves of two problems and must never be summed.
   if (pr.windowKey) {
@@ -163,6 +205,15 @@ function renderProgress(pr) {
       + `never added together.`;
     box.appendChild(w);
   }
+
+  // THE SOLVER-UNITS ZONE (Session W2.2). Everything inside this container is
+  // the SCALED OBJECTIVE's — the trail, the curve, the proof floor — and a
+  // dollar sign may never enter it, in any state. It exists as a real container
+  // because W2.2's predicate audit found W2.1's money guard ENUMERATING three
+  // selectors while the section had grown four more; a zone can be asserted
+  // whole, and a list has to be remembered.
+  const zone = el("div", "sm-trail-zone");
+  zone.id = "sm-trail-zone";
 
   if (pr.state === "present") {
     const shown = sampleTrail(pr.incumbents, TABLE_ROWS);
@@ -188,7 +239,7 @@ function renderProgress(pr) {
       tb.appendChild(tr);
     });
     tbl.append(th, tb);
-    box.appendChild(tbl);
+    zone.appendChild(tbl);
     // NO SILENT CAPS. A real board's search produces dozens to hundreds of
     // incumbents (46 on an eight-job specimen), and a table that quietly showed
     // twelve of them would read as "this is the whole search". The curve below
@@ -200,9 +251,9 @@ function renderProgress(pr) {
         + `improvements, evenly sampled with the first and last kept. The curve `
         + `below plots all ${pr.incumbents.length}; the full trail is stored `
         + `with the run.`;
-      box.appendChild(note);
+      zone.appendChild(note);
     }
-    box.appendChild(renderCurve(pr));
+    zone.appendChild(renderCurve(pr));
   }
 
   // Clause (4): the proof floor and the gap render WITH the story, in the gap
@@ -216,7 +267,8 @@ function renderProgress(pr) {
       + `${pr.unit}, leaving a gap of ${pct(pr.gap * 100)} — not proven `
       + `optimal; a cheaper plan may exist and could be up to that much `
       + `cheaper.`;
-  box.appendChild(proof);
+  zone.appendChild(proof);
+  box.appendChild(zone);
   return box;
 }
 
@@ -255,7 +307,7 @@ function renderCurve(pr) {
 }
 
 // --- the v1 statistics row ------------------------------------------------
-function renderStats(s) {
+function renderStats(s, util) {
   const box = el("section", "sm-stats");
   box.id = "sm-stats";
   box.appendChild(el("h2", "sm-h", "This plan in numbers"));
@@ -272,22 +324,73 @@ function renderStats(s) {
   }
   box.appendChild(row);
 
-  // THE HONEST GAP. These were asked for and are NOT rendered, because nothing
-  // stores them and computing one here would be a number with no provenance.
-  // Each names where it should come from instead.
-  const gaps = el("div", "sm-gaps");
-  gaps.id = "sm-gaps";
-  gaps.appendChild(el("div", "sm-sub-h", "Asked for, and not shown"));
-  const ul = el("ul", "sm-gaplist");
-  for (const g of s.gaps) {
-    const li = el("li");
-    li.dataset.key = g.key;
-    li.appendChild(el("strong", null, g.label));
-    li.appendChild(document.createTextNode(` — ${g.why}. Should come from ${g.from}.`));
-    ul.appendChild(li);
+  if (util) box.appendChild(renderUtilization(util));
+
+  // THE HONEST GAP. Anything asked for that nothing stores is NAMED here rather
+  // than computed client-side or quietly dropped. W2.2 landed the three rollups
+  // W2.1 listed, so this is EMPTY today — and the block is skipped entirely
+  // rather than rendered as an empty heading, because a heading with nothing
+  // under it reads as a failure to load.
+  if (s.gaps.length) {
+    const gaps = el("div", "sm-gaps");
+    gaps.id = "sm-gaps";
+    gaps.appendChild(el("div", "sm-sub-h", "Asked for, and not shown"));
+    const ul = el("ul", "sm-gaplist");
+    for (const g of s.gaps) {
+      const li = el("li");
+      li.dataset.key = g.key;
+      li.appendChild(el("strong", null, g.label));
+      li.appendChild(document.createTextNode(` — ${g.why}. Should come from ${g.from}.`));
+      ul.appendChild(li);
+    }
+    gaps.append(ul);
+    box.appendChild(gaps);
   }
-  gaps.append(ul);
-  box.appendChild(gaps);
+  return box;
+}
+
+// W2.2 B2 — UTILIZATION BY MACHINE, WITH ITS DENOMINATOR.
+//
+// A list rather than a tile, because a ratio needs somewhere to put the two
+// numbers it came from. Every row shows worked and open minutes beside the
+// percentage, and the block prints the SERVER's definition string — the cockpit
+// never words it, so it cannot re-imply a denominator of its own (4B.20).
+function renderUtilization(u) {
+  const box = el("div", "sm-util");
+  box.id = "sm-util";
+  box.dataset.source = u.source;
+  box.appendChild(el("div", "sm-sub-h", "Utilization by machine"));
+  const tbl = el("table", "sm-table");
+  tbl.id = "sm-util-table";
+  const th = el("thead");
+  const hr = el("tr");
+  hr.append(el("th", null, "machine"), el("th", null, "worked"),
+            el("th", null, "open"), el("th", null, "utilization"));
+  th.appendChild(hr);
+  const tb = el("tbody");
+  for (const r of u.rows) {
+    const tr = el("tr");
+    tr.dataset.resource = r.resourceId;
+    tr.appendChild(el("td", "sm-k", r.name));
+    tr.appendChild(el("td", "sm-v sm-dim", mins(r.workingMinutes)));
+    tr.appendChild(el("td", "sm-v sm-dim", mins(r.openCapacityMinutes)));
+    // A machine with no denominator keeps its row and says there is no ratio —
+    // dropping it would make the list read as "every machine we could measure".
+    tr.appendChild(el("td", "sm-v", r.utilization == null
+      ? "no open capacity recorded"
+      : pct(r.utilization * 100)));
+    tb.appendChild(tr);
+  }
+  tbl.append(th, tb);
+  box.appendChild(tbl);
+  if (u.definition) {
+    const d = el("p", "sm-note");
+    d.id = "sm-util-definition";
+    d.textContent = `Utilization here is ${u.definition}. The board's own `
+      + `per-row figure is computed over the window you are looking at, so the `
+      + `two answer different questions and may differ.`;
+    box.appendChild(d);
+  }
   return box;
 }
 
@@ -308,7 +411,7 @@ export function buildSummary(doc) {
   root.appendChild(head);
   root.appendChild(renderMoney(m.money, m.portfolio));
   root.appendChild(renderProgress(m.progress));
-  root.appendChild(renderStats(m.stats));
+  root.appendChild(renderStats(m.stats, m.utilization));
   return root;
 }
 

@@ -62,7 +62,7 @@ def _doc(frozen_hours=48, window_days=10):
     a thaw test would pass by thawing nothing."""
     frozen_until = T0 + timedelta(hours=frozen_hours)
     return {
-        "contract_version": "1.16",
+        "contract_version": "1.17",
         "schedule_id": "rolling-fixture",
         "assignments": [
             # committed, well before the boundary — a thaw to +24h must NOT touch it

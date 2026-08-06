@@ -1813,8 +1813,12 @@ Queue additions from the Khalil demo (2026-08-03), **MUST-tier first**:
    is never *"savings vs your current process"*; the proof floor renders with
    the existing gap rider; no fabricated baselines. (Khalil explicitly
    retracted live animation — summary only.)
-   **Carried:** pricing the FIRST incumbent through the ledger is what would
-   make the story dollars, and is its own item (§5a).
+   **AMENDED AND COMPLETED 2026-08-05, session W2.2 (R-SP1 AMENDMENT 1).**
+   The first incumbent's placements are captured mid-search and priced by the
+   SAME ledger extractor that prices the finished plan, so the money story now
+   renders in DOLLARS at both ends — and R-DP12 is untouched, because no
+   scaled objective reaches the surface. Contract **1.17**. Close-out
+   `docs/closeouts/w2-dollar-story-rollups.md`.
 2. **"Resources" header** on the machine column; finding phrasings de-jargoned
    (*"workload too dense"* → plain words).
 3. **Setup-grouping visual v1, DISPLAY-ONLY** — attribute-colored solved
@@ -1822,8 +1826,13 @@ Queue additions from the Khalil demo (2026-08-03), **MUST-tier first**:
    without a ruled comparator**. **PREREQUISITE NAMED 2026-08-05 (W2.1):**
    *total changeover minutes is not stored anywhere* — `setup_min` is
    per-bar and the ledger carries setup COST, not minutes. The summary screen
-   renders it as a named gap rather than summing it client-side. This item
-   owes an **M7 rollup** beside the setup cost the extractor already computes.
+   renders it as a named gap rather than summing it client-side.
+   **PREREQUISITE LANDED 2026-08-05 (W2.2 B3):** `setup.changeover_minutes` now
+   exists, summed over EXACTLY the WIP-filtered operation set the setup charge
+   is billed on. NB the charge is a fixed fee PER RUNNING OPERATION, not a rate
+   on time — so the two share a POPULATION, not a summation, and any
+   "minutes saved" claim this item later makes still needs its own ruled
+   comparator.
 4. **Axis-increment affordance** — the capability exists via zoom; the finding
    is discoverability.
 
@@ -7525,6 +7534,76 @@ by one today. Stated as a bound, not as coverage.
 processes and return only a `PortfolioMember`; only the WINNER is re-solved with
 `persist=True`, and that re-solve is the trail the board carries. Correct and
 cheap, but "what did seed 43's search do" is unanswerable by construction.
+
+**§5a.231 — W2.2: THE DOLLAR STORY (R-SP1 AMENDMENT 1).** Full reasoning in
+docs/04, 2026-08-05; narrative in `docs/closeouts/w2-dollar-story-rollups.md`.
+Contract **1.16 -> 1.17**; docs/02 §4.4/§4.5 amended; prompts unchanged. The
+first incumbent's placements are captured ONCE, mid-search, by
+`VariableMap.extract` — the SAME function that reads the final solution, because
+it reads through `solver.Value(v)` and a solution callback provides exactly that
+accessor. **The brief said to STOP on any axis where a mid-search snapshot
+cannot supply what the extractor needs; it supplies everything**, which is what
+makes the amendment's premise literally true rather than nearly true. Pricing
+runs POST-solve through `plan_pricing.price_placements`, one extraction, never
+per incumbent.
+
+**§5a.232 — THE SELF-PROOF, AND WHAT LICENSES THE NOVEL ANSWER.** The bridge
+marshals a dozen arguments; a forgotten one would still return a plausible
+number and the first plan's price would be wrong in the same direction. So the
+bridge is pointed at the ONE placement set whose price is already known — the
+FINAL plan — and must reproduce the shipped ledger total TO THE CENT before its
+novel answer is trusted. Verified on the rolling path and, live, on the
+monolithic specimen ($6,160.00 both ways).
+
+**§5a.233 — THE EMISSION SEAM MOVED, AND THE RULE THAT MOVED IT.** *Whoever
+knows the shipped plan emits the trail.* W2.1 emitted the monolithic trail
+inside `SolveRunner`; on a two-stage solve the shipped plan is STAGE 2's
+placements, which stage 1's runner has not seen, so a "final" priced there would
+be a number no ledger agrees with. `SolveRunner` gained `defer_progress`,
+`solve_two_stage` sets it, and the caller emits after stage 2 returns.
+
+**§5a.234 — PART B: THE THREE ROLLUPS.** `service.demands_counted` rolls up
+late + on-time (consolidator-verified, kept DISTINCT from R-PD1's tardiness
+split, which decomposes a cost). `resource.utilization` is a RATIO and therefore
+not a rollup: its two components ride beside it and **the denominator is on the
+record** (4B.20's fix, in the metric's own message). `setup.changeover_minutes`
+shares a POPULATION with the setup charge, not a summation — see §5a.236.
+
+**§5a.235 — MEASUREMENTS.** Live specimen (`datasets/mobility_box`,
+deterministic, `_ai_exam_scratch/w22_specimen` — the only child minted,
+unregistered): **priced, $41,288.42 -> $6,160.00, 85.1%**; objective-space
+metrics unchanged beside it (4,073,055 -> 616,000); both rollups exact; the
+bridge's final price equals M7's ledger to the cent. Rolling specimen (40 orders,
+seed 42): **$18,905.42 -> $10,304.58**. Suites: Python **2937/305/0 ->
+2968/305/0** (+31: `test_plan_pricing` 6, `test_plan_statistics` 22,
+`test_solve_progress` +3); cockpit **407 -> 434** (+27; one dark freshness test failed
+under load and passed alone — the standing parallel-load flake class, not a
+regression). Negative controls **9/9 red** after four were re-pointed, every
+restore byte-identical.
+
+**§5a.236 — W2.2's CARRY-FORWARDS (REPORTED, deliberately NOT fixed).**
+**(a) THE SELF-PROOF IS ONLY AS STRONG AS ITS SPECIMEN'S FEATURE COVERAGE.**
+NC2 dropped `overtime_windows` from the bridge and the self-proof stayed GREEN,
+because the pilot_scale window prices no overtime. The control was re-pointed at
+`cost_model`; the underlying limit stands, and a specimen that exercises
+overtime, WIP and a declared setup matrix would harden it. Named, not built.
+**(b) "MINUTES SUMMED WHERE COST IS SUMMED" HAD NO MINUTES TO SUM.** The setup
+charge is `count * fixed_per_setup` — a fee per running operation, with no time
+in it. B3 therefore shares a POPULATION with the charge rather than a summation.
+Any future "changeover minutes saved" claim (R2 item 3) still needs its own
+ruled comparator; the minutes alone do not supply one.
+**(c) LOSING PORTFOLIO MEMBERS ARE STILL UNPRICED**, and now doubly so: they
+have no trail (W2.1 §7(e)) and no first-plan price. Correct by construction —
+only the winner is re-solved with `persist=True`.
+**(d) THE CAPTURE IS UNCONDITIONAL.** Every solve now takes one `extract` at its
+first incumbent, including solves nobody will ever price (sandbox, sensitivity,
+pool). It is one pass over the variable map and was not measured as a cost;
+gating it on a caller's intent is the fix if it ever shows up in a latency
+budget.
+**(e) THE WALL-COST DISCLOSURE IS UNEXERCISED LIVE.** `capture_note` fires only
+on a priced trail whose solve was WALL-truncated; every specimen here bound on
+its deterministic budget, so the sentence is guarded by fixture and by a cockpit
+spec, never yet by a real wall-stopped board.
 
 ## 6. Open rulings queue
 

@@ -464,6 +464,10 @@ def _two_stage_solve(model, var_map, free_start_vars, *,
             # through a new surface. The other three return paths use
             # `replace(s1, …)` and inherit s1's trail for free.
             incumbent_trail=s1.incumbent_trail,
+            # W2.2 — and the first incumbent's PLACEMENTS with it, for the
+            # same reason: the money story's first endpoint is the cost
+            # search's own first plan.
+            first_incumbent_values=s1.first_incumbent_values,
             # Phase 0 (4B.12 CU3) is INCLUDED: `det_consumed` is what the whole
             # call spent, and a warm start that is not counted is a warm start
             # that looks free. 0.0 at HINT_OFF, so unchanged for every caller.
@@ -758,6 +762,23 @@ class RollingView:
     # documents that render it. EMPTY on a window that admitted no work.
     incumbent_trail: list = field(default_factory=list)
     best_bound: Optional[float] = None
+    # W2.2 (R-SP1 AMENDMENT 1) — THE MONEY STORY's TWO ENDPOINTS, and the means
+    # to check them. `first_incumbent_values` is the cost search's own first
+    # workable plan, captured once; `final_values` is the plan this view SHIPS
+    # (stage 2's placements, whose ledger is `cost_ledger`). `pricing_inputs`
+    # is everything else the ledger extractor needs, frozen, so both endpoints
+    # are priced against the same tables — a first plan priced on one op set and
+    # a final priced on another would be a difference of two questions.
+    #
+    # `first_plan_cost` is the novel figure; it is None wherever the capture or
+    # the pricing did not happen, and the surfaces then render the
+    # objective-space percentage exactly as before.
+    first_incumbent_values: Any = None
+    final_values: Any = None
+    pricing_inputs: Any = None
+    first_plan_cost: Optional[float] = None
+    # W2.2 Part B — the three rollups, straight off the extractor.
+    statistics: dict = field(default_factory=dict)
     # 4B.25 — what the two-stage solve ACTUALLY SPENT, in deterministic units.
     # A portfolio member's row is meant to answer "was it the seed or the
     # budget?" (4B.24 §7(b) says both decide), and it could not: the view
@@ -869,6 +890,13 @@ def build_rolling_view(
     # fabricated first plan and not a zero.
     incumbent_trail: list = []
     best_bound: Optional[float] = None
+    # W2.2 defaults for the no-free-ops path: a window that admitted no work ran
+    # no search, so there is no first plan to price and no statistics to state.
+    first_values = None
+    final_values = None
+    pricing_inputs = None
+    first_plan_cost: Optional[float] = None
+    statistics: dict = {}
 
     # CU1 persistence wiring — reporters + snapshot writer are opened only when
     # ``persist`` is set (the API rolling worker). runs_dir mirrors the spine's
@@ -919,6 +947,7 @@ def build_rolling_view(
         # W2.1 (R-SP1) — stage 1's trail and the bound it stopped at.
         incumbent_trail = list(solve.incumbent_trail)
         best_bound = solve.best_bound
+        first_values = solve.first_incumbent_values
         if solve.status in ("OPTIMAL", "FEASIBLE"):
             sv = solve.solve_values
             for op in free_ops:
@@ -1034,7 +1063,11 @@ def build_rolling_view(
                     s_rep, trail=incumbent_trail, status=solve.status,
                     best_bound=solve.best_bound, gap=solve.gap,
                     det_consumed=solve.det_consumed, det_budget=det_total,
-                    window_key=t0.isoformat())
+                    window_key=t0.isoformat(),
+                    # R-SP1 AMENDMENT 1: the ledger-priced endpoints. Both or
+                    # neither — `price_summary` refuses a half-priced story.
+                    first_plan_cost=first_plan_cost,
+                    final_plan_cost=(ledger or {}).get("total_cost"))
                 # The artifact, registered BEFORE the run closes — the output
                 # manifest is sealed into the close record, so a file registered
                 # after `end()` is lost from the manifest that should carry it.
@@ -1045,6 +1078,8 @@ def build_rolling_view(
                      "status": solve.status, "best_bound": solve.best_bound,
                      "gap": solve.gap, "stage": "cost",
                      "objective_unit": "objective_units",
+                     "first_plan_cost": first_plan_cost,
+                     "final_plan_cost": (ledger or {}).get("total_cost"),
                      "incumbents": incumbent_trail},
                     plant.out_dir / "solve_progress.json", reporter=s_rep)
                 s_rep.end(RunStatus.SUCCESS)
@@ -1064,7 +1099,34 @@ def build_rolling_view(
                 e_rep.end(RunStatus.SUCCESS)
             ledger = result.cost_ledger
             svc = result.service_outcomes
+            statistics = result.statistics
             op_drivers = {a["operation_ref"]: a.get("driver") for a in result.assignments}
+
+            # R-SP1 AMENDMENT 1 — PRICE THE FIRST PLAN, POST-SOLVE.
+            #
+            # The same extractor, through the same bridge, against the SAME
+            # tables the production extraction above just used — which is the
+            # whole of the amendment's admissibility rule. One extraction, once;
+            # never per incumbent.
+            #
+            # `final_values` is `sv`, the placements this view SHIPS, so the
+            # story's two endpoints are the solver's own first plan and the plan
+            # the board publishes. The guard re-prices `final_values` here and
+            # asserts it reproduces `ledger["total_cost"]` to the cent — the
+            # bridge proving itself against the known answer before its novel
+            # answer is trusted.
+            from mre.modules.plan_pricing import PricingInputs, price_placements
+            final_values = sv
+            pricing_inputs = PricingInputs(
+                snapshot_id=plant.snapshot_id, operations=free_ops,
+                workpackages=wps, resources=plant.resources, fulfillments=fuls,
+                demands=demands, cost_model=extract_cm,
+                cal_windows=var_map.cal_windows, op_eligible=var_map.op_eligible,
+                overtime_windows=var_map.overtime_windows)
+            first_plan_cost = price_placements(
+                first_values, pricing_inputs,
+                # Both endpoints must be placements of the SAME plan.
+                require_ops=set(sv.op_resource))
 
     # BEYOND-HORIZON = every schedulable demand with no placed op this window.
     beyond = [d["id"] for d in sched if d["id"] not in placed_demand_ids]
@@ -1080,7 +1142,10 @@ def build_rolling_view(
         earliness_value=ev_used, status=status, earliness_tiebreak=tiebreak,
         tiebreak_status=tiebreak_status, tiebreak_skipped_reason=tiebreak_skipped,
         objective=objective, gap=gap,
-        incumbent_trail=incumbent_trail, best_bound=best_bound)
+        incumbent_trail=incumbent_trail, best_bound=best_bound,
+        first_incumbent_values=first_values, final_values=final_values,
+        pricing_inputs=pricing_inputs, first_plan_cost=first_plan_cost,
+        statistics=statistics)
 
 
 # ---------------------------------------------------------------------------

@@ -226,3 +226,51 @@ def test_writing_the_artifact_without_a_reporter_records_nothing(tmp_path):
     path = tmp_path / "p.json"
     sp.write_solve_progress_json({"stage": "cost"}, path)
     assert path.exists()
+
+
+# ---------------------------------------------------------------------------
+# R-SP1 AMENDMENT 1 — the DOLLAR rollup (Session W2.2)
+# ---------------------------------------------------------------------------
+
+def test_the_dollar_pair_is_a_rollup_that_decomposes_exactly(rep, tmp_path):
+    """THE AMENDMENT'S CLAUSE (2), MADE STRUCTURAL IN CURRENCY.
+
+    W2.1 gave the objective-space story this treatment and W2.2 owed the dollar
+    story the same. It was MISSING until a negative control found it: NC5
+    stripped `rollup_of` from the dollar metric and every test stayed green,
+    because the only decomposition anyone checked was the block's own
+    arithmetic. first_plan_cost = final_plan_cost + plan_cost_improvement,
+    verified by the consolidator, is what stops "improvement" becoming a
+    difference against anything the solver did not itself produce.
+    """
+    sp.emit_solve_progress(rep, trail=_trail(1000.0, 750.0), status="FEASIBLE",
+                           best_bound=700.0, gap=0.04,
+                           first_plan_cost=18905.42, final_plan_cost=10304.58)
+    recs = _records(rep, tmp_path)
+    by_id = {r["record_id"]: r for r in recs if r.get("record_type") == "metric"}
+    first = next(r for r in by_id.values() if r["name"] == sp.METRIC_FIRST_COST)
+    assert first["unit"] == sp.COST_UNIT
+    assert first["rollup_of"], "the dollar pair must decompose"
+    parts = [by_id[i] for i in first["rollup_of"]]
+    assert {p["name"] for p in parts} == {sp.METRIC_FINAL_COST,
+                                          sp.METRIC_COST_IMPROVEMENT}
+    assert sum(p["value"] for p in parts) == pytest.approx(first["value"])
+    # the two measures keep separate names and separate units
+    obj = next(r for r in by_id.values() if r["name"] == sp.METRIC_FIRST)
+    assert obj["unit"] == sp.OBJECTIVE_UNIT != sp.COST_UNIT
+
+
+def test_no_dollar_metric_is_emitted_on_an_unpriced_trail(rep, tmp_path):
+    """Both endpoints or neither. A half-priced story is no story."""
+    sp.emit_solve_progress(rep, trail=_trail(1000.0, 750.0), status="FEASIBLE",
+                           best_bound=700.0, gap=0.04,
+                           first_plan_cost=18905.42, final_plan_cost=None)
+    names = {r["name"] for r in _records(rep, tmp_path)
+             if r.get("record_type") == "metric"}
+    assert sp.METRIC_FIRST_COST not in names
+    assert sp.METRIC_FINAL_COST not in names
+
+
+def test_the_priced_clause_3_names_the_boundary_between_the_two_measures():
+    assert "real ledger costs" in sp.CLAUSE_3_LABEL_PRICED
+    assert "never mixed" in sp.CLAUSE_3_LABEL_PRICED

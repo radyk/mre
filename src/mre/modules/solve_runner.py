@@ -67,6 +67,20 @@ class SolveResult:
     # what the guards assert (clause 6).
     incumbent_trail: list = field(default_factory=list)
 
+    # THE FIRST INCUMBENT'S PLACEMENTS (Session W2.2, R-SP1 AMENDMENT 1).
+    #
+    # ONE snapshot, at the first improving solution only — the amendment's
+    # one-snapshot bound is the wall, and a per-incumbent capture loop is
+    # exactly what it forbids. None on a solve that found nothing.
+    #
+    # It is a real ``SolveValues``, taken by ``VariableMap.extract`` — the SAME
+    # function that reads the final solution, because that function reads
+    # through ``solver.Value(v)`` and a solution callback provides exactly that
+    # accessor. So the snapshot invents no field and no second reader can
+    # disagree with the first, which is what lets the ledger price it for real
+    # rather than approximately.
+    first_incumbent_values: Optional[SolveValues] = None
+
     # The DETERMINISTIC time this solve actually consumed (CP-SAT's own
     # response_proto.deterministic_time), or None if it could not be read.
     # Session 4B.8 CU2 needs it because stage 2's budget is now the REMAINDER of
@@ -117,9 +131,20 @@ class _SolutionCallback:
         self._count = 0
         self._best_obj: Optional[float] = None
         self.trail: list[dict] = []
+        #: R-SP1 AMENDMENT 1 — the FIRST incumbent's placements, captured once.
+        self.first_values: Optional[SolveValues] = None
 
     def on_solution_callback(self, solver) -> None:
         self._count += 1
+        if self._count == 1:
+            # ONE snapshot, and it is taken by the production reader. A capture
+            # that failed must not kill a solve that is otherwise fine: the
+            # money story is decoration on a correct schedule, and its absence
+            # is a state the surfaces already render.
+            try:
+                self.first_values = self._var_map.extract(solver)
+            except Exception:  # noqa: BLE001 — a price is never worth a solve
+                self.first_values = None
         try:
             obj = solver.ObjectiveValue()
         except Exception:
@@ -189,7 +214,22 @@ class SolveRunner:
         model,
         var_map: VariableMap,
         reporter=None,
+        defer_progress: bool = False,
     ) -> SolveResult:
+        """``defer_progress`` — WHOEVER KNOWS THE SHIPPED PLAN EMITS THE TRAIL.
+
+        Session W2.2, R-SP1 AMENDMENT 1. This runner emits the solve-progress
+        records beside its own ``solve_complete``, which was right while the
+        trail was objective-space only. It cannot survive pricing: on a
+        TWO-STAGE solve the shipped plan is STAGE 2's placements, and stage 1's
+        runner has not seen them. Pricing a "final" that is not the plan the
+        board publishes would put a number on the screen that no ledger
+        anywhere agrees with.
+
+        So ``solve_two_stage`` sets this: the runner captures, and the
+        two-stage caller emits once stage 2 has returned. A single-stage caller
+        knows the shipped plan immediately and still emits inline.
+        """
         from ortools.sat.python import cp_model as cp
 
         solver = cp.CpSolver()
@@ -217,6 +257,7 @@ class SolveRunner:
         cb = _Cb(var_map, reporter)
         status_enum = solver.Solve(model, cb)
         trail = list(cb._inner.trail)
+        first_values = cb._inner.first_values
 
         status_map = {
             cp.OPTIMAL:    "OPTIMAL",
@@ -301,12 +342,15 @@ class SolveRunner:
             #
             # No `window_key`: a monolithic solve has no window to name, and
             # clause (1)'s no-summing rule is about windows that exist.
-            from mre.modules.solve_progress import emit_solve_progress
-            emit_solve_progress(
-                reporter, trail=trail, status=status_str, best_bound=bound,
-                gap=gap, det_consumed=_deterministic_time_of(solver),
-                det_budget=self._deterministic_time, window_key=None,
-            )
+            if not defer_progress:
+                from mre.modules.solve_progress import emit_solve_progress
+                emit_solve_progress(
+                    reporter, trail=trail, status=status_str,
+                    best_bound=bound, gap=gap,
+                    det_consumed=_deterministic_time_of(solver),
+                    det_budget=self._deterministic_time,
+                    window_key=None,
+                )
 
         # Extract values if feasible
         if status_str in ("OPTIMAL", "FEASIBLE"):
@@ -333,4 +377,5 @@ class SolveRunner:
                             and wall_time >= self._time_limit - 0.05),
             det_consumed=_deterministic_time_of(solver),
             incumbent_trail=trail,
+            first_incumbent_values=first_values,
         )

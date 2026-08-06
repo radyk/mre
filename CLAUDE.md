@@ -197,11 +197,11 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session W2.1 — the solve-progress ledger and the summary
-screen**, 2026-08-05 (docs/07 §5a.227-230, R2 queue item 1 BUILT; docs/04
-2026-08-05 **R-SP1 ruled and BUILT**; contract **1.16** `solver.progress`;
-docs/02 §4.5 amended; prompts unchanged **v19 / v9**; narrative
-`docs/closeouts/w2-solve-progress-summary-v1.md`).
+**Last closed: Session W2.2 — the dollar story and the three rollups**,
+2026-08-05 (docs/07 §5a.231-236; docs/04 2026-08-05 **R-SP1 AMENDMENT 1 ruled
+and BUILT**; contract **1.17** `solver.progress` priced pair + `statistics`;
+docs/02 §4.4/§4.5 amended; prompts unchanged **v19 / v9**; narrative
+`docs/closeouts/w2-dollar-story-rollups.md`).
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -216,6 +216,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| W2.2 | the dollar story + the three rollups | R-SP1 amd 1 | `w2-dollar-story-rollups.md` |
 | W2.1 | solve-progress ledger + summary screen | R-SP1 | `w2-solve-progress-summary-v1.md` |
 | S-02 + S-03 | the certificate contract | R-CT1 | `4x-certificate-contract.md` |
 | 4A tg (d.3) | the product explains its own words | R-TE1 | `4a-teaching-d3-term-explanation.md` |
@@ -245,7 +246,7 @@ and §5a range.
 
 ### Governed artifacts, current versions
 
-Contract **1.16** · parse prompt **v19** · synthesis prompt **v9** ·
+Contract **1.17** · parse prompt **v19** · synthesis prompt **v9** ·
 `DriverCode` **14 members** · finding codes **20** · RUBRIC axes through **C9**.
 Changing any of these is a **vocabulary-class change**: reviewed, versioned,
 committed with its spec update in the same commit.
@@ -376,9 +377,12 @@ measurements. Do not restate a ruling's reasoning here.
   and deliberately unbuilt — the threshold is a declared IDS coefficient that
   does not exist.
 - **R-SP1** — the money story is the solver's OWN search history, told against
-  itself: improvement only over its own first feasible plan, in SOLVER UNITS
-  (the ledger is the only currency), stage 1's trail, per WINDOW and never
-  summed, flat and absent states told, the callback must not perturb.
+  itself: improvement only over its own first feasible plan, stage 1's trail,
+  per WINDOW and never summed, flat and absent states told, the callback must
+  not perturb. **AMENDMENT 1**: dollars are admissible EXACTLY when both
+  endpoints are LEDGER-PRICED PLACEMENTS — one capture at the first incumbent,
+  priced post-solve by the extractor that prices the finished plan; otherwise
+  the objective-space percentage stands.
 - **R-BK1** — the published board is a portfolio, not a draw: K deterministic
   runs at consecutive seeds, best by LEDGER, ties by lowest seed. K and the
   budget are DECLARED coefficients; losing members' totals are PUBLISHED; a
@@ -515,7 +519,7 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
-| W2.1 | pricing the FIRST incumbent is what would make the story dollars; three of the four v1 statistics are stored nowhere (M7 rollups owed) | §5a.230 · `w2-solve-progress-summary-v1.md` |
+| W2.2 | the bridge self-proof is only as strong as its specimen's feature coverage; the first-incumbent capture is unconditional on every solve | §5a.236 · `w2-dollar-story-rollups.md` |
 | S-02/S-03 | the board opener still returns `grade: None` though its record now exists; `certificate.md` is written but not registered | §5a.226 · `4x-certificate-contract.md` |
 | 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |
 | 4A (d.2) | `RECORDS_FROM` is a subset test, not equality; the cross-version bank names two schedule ids (the postposed deictic was discharged by (d.3) R2) | §5a.211 · `4a-teaching-d2-format-ladder-carry.md` |

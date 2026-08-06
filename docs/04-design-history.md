@@ -20511,3 +20511,183 @@ live specimen came back with the Event and the Metrics present and **no
 beside the certificate), which is the division `write_certificate_json` already
 uses; NC6 and NC7 revert the monolithic emission and the assembler's read
 independently.
+
+---
+
+## 2026-08-05 — R-SP1 AMENDMENT 1: THE DOLLAR STORY, AND THE THREE ROLLUPS
+
+**Session W2.2.** W2 (docs/07 §5b), follow-on to W2.1, arbitrated by Daryn the
+same day. It completes W2.1's own §7(a) and §7(b) exactly as those were scoped:
+price the first incumbent with the REAL ledger so the money story is dollars at
+both ends, and land the three M7 rollups the summary screen named as gaps.
+
+Contract **1.16 → 1.17**. Prompts unchanged (parse **v19**, synthesis **v9**).
+
+### The amendment (R-SP1 AMENDMENT 1), transcribed
+
+**R-SP1 AMENDMENT 1 — DOLLARS ARE ADMISSIBLE EXACTLY WHEN BOTH ENDPOINTS ARE
+LEDGER-PRICED PLACEMENTS.**
+
+The money story may render in currency when, and only when, the first
+incumbent's placements were captured and priced by the same ledger extractor
+that prices the finished plan. Both figures are then real costs of real
+solver-produced plans, and their difference is ledger arithmetic end to end — no
+scaled objective reaches a planner surface (R-DP12 intact and load-bearing).
+
+Clause (2) is unchanged and renders with the dollar story verbatim: this is the
+solver against its own first plan, never against the customer's process or any
+plan the solver did not produce.
+
+Capture is one snapshot at the first incumbent; pricing runs AFTER the solve
+completes. Capture cost is wall cost: on a wall-limited solve this is stated in
+the trail's provenance; under a deterministic budget the search is unaffected,
+proven by digest. A trail whose first incumbent was not captured (zero
+incumbents, or recorded before this change) renders the objective-space
+percentage per clause (3) as before — three generations of trail, each honest.
+
+### Why the bridge needed no approximation, and the axis that was checked first
+
+The brief said to STOP on any axis where a mid-search snapshot cannot supply
+what the extractor needs, and to say so rather than approximate. **It supplies
+everything.** `VariableMap.extract` reads its values through `solver.Value(v)`
+and nothing else, and `CpSolverSolutionCallback` provides exactly that accessor.
+The first incumbent is therefore captured by **the same function** that reads the
+final solution — there is no second reader that could disagree with the first,
+and no field the snapshot has to invent. That is what makes the amendment's
+premise literally true rather than nearly true.
+
+### The self-proof, which is the whole license
+
+`plan_pricing.price_placements` marshals a dozen arguments into the extractor. A
+forgotten one — overtime windows, the calendar, the setup basis — would still
+return a plausible number, and the first plan's price (which nobody can check
+independently) would be wrong in the same direction. So the bridge is pointed at
+the ONE placement set whose price is already known:
+
+    re-price the FINAL plan through the bridge -> must equal the shipped
+    ledger total TO THE CENT
+
+The novel answer is trusted only after the known answer reproduces. Without
+that, "a nearly-real dollar" is a fabricated dollar and R-DP12 is back in play.
+
+### The rule that moved the emission seam
+
+**WHOEVER KNOWS THE SHIPPED PLAN EMITS THE TRAIL.** W2.1 emitted the monolithic
+trail inside `SolveRunner`, beside its own `solve_complete`. That cannot survive
+the amendment: the shipped plan on a two-stage solve is STAGE 2's placements,
+and stage 1's runner has not seen them. Pricing a "final" that is not the plan
+the board publishes would put a number on the screen that no ledger anywhere
+agrees with.
+
+So `SolveRunner` gained `defer_progress`, which `solve_two_stage` sets: the
+runner captures, and the two-stage caller emits after stage 2 returns. A
+single-stage direct caller knows the shipped plan immediately and still emits
+inline. One rule, one sentence, and the trail's endpoints are now the same two
+plans the ledger describes.
+
+### The three rollups, and the denominators they carry
+
+`plan_statistics` composes them once and both assemblers read them — the rolling
+one off the view, the monolithic one out of the Schedule's `summary_metrics`.
+
+* **`service.demands_counted`** ROLLS UP `service.late_demands` +
+  `service.on_time_demands`, verified by the consolidator. Kept distinct from
+  R-PD1's tardiness split, which decomposes a COST: "how many orders are late"
+  and "how much of the lateness charge was unavoidable" are two statements, and
+  W2.1's screen already keeps them apart.
+* **`resource.utilization`** is a RATIO, so it is not a rollup — its two
+  components (`resource.working_minutes`, `resource.open_capacity_minutes`) ride
+  beside it as their own metrics and the reader checks the arithmetic. **The
+  DENOMINATOR IS ON THE RECORD**, in the metric's own message: 4B.20's defect
+  was one denominator per surface, and the fix is that the number never travels
+  without its definition. The numerator is the WORKING minutes the ledger bills
+  (`dur_min`, the sum of a resumable op's own chunk spans), never the elapsed
+  span. Where no calendar was supplied there is **no ratio at all** — the
+  components are still emitted, and a 0.0 would be a claim about the plant
+  manufactured from a fact about our inputs.
+* **`setup.changeover_minutes`** — and here the brief's phrasing needed a
+  correction, recorded below.
+
+### THE FINDING: "minutes summed where cost is summed" had no minutes to sum
+
+The brief asked for changeover minutes "beside the setup COST the extractor
+already computes — same source walk, minutes summed where cost is summed". The
+extractor's setup charge is
+
+    setup_cost = new_setup_ops * setup_fixed
+
+— a **fixed fee per running operation**. There is no changeover *time* anywhere
+in the ledger: the cost walk counts OPERATIONS, it does not sum MINUTES, so
+there is no minute quantity sitting beside the cost to pick up.
+
+What the "same source walk" discipline actually buys here is therefore not a
+shared summation but a **shared population**. The minutes are summed from each
+operation's own `setup_duration` (resource-specific where
+`resource_setup_durations` declares one), over **exactly** the WIP-filtered op
+set the charge is billed on — `wip_status not in (complete, in_progress)`,
+because a setup that happened before the reference date is sunk (docs/06 §5.13)
+and is already excluded from the charge. Filter the two differently and the
+plant's changeover time and its changeover bill describe different plans. The
+definition is on the record and names the filter.
+
+### Discipline recorded
+
+**AN ENUMERATED GUARD IS NOT A SCOPED GUARD, AND ONLY RUNNING IT SAYS SO.**
+W2.1's no-dollar-sign cockpit assertion listed three selectors (`#sm-trail`,
+`#sm-progress-story`, `#sm-proof-floor`). The progress SECTION also contains
+`#sm-window-key`, `#sm-clause-2`, `#sm-clause-3` and `#sm-trail-cap`. A `$`
+injected into the window-key line left the guard **GREEN** (proven by injection
+at HEAD; restore byte-identical, sha256 `55bdae94b748aa34`). Re-scoped to the
+whole `#sm-progress` section, with the money block's converse assertion kept.
+This is the enumerate-vs-scope shape the repo keeps re-finding, now on a guard
+written one session earlier — which is exactly why the predicate audit runs in
+the NEXT session and not the building one.
+
+**A PROVENANCE GUARD THAT HAND-WALKS THE MODEL GOES BLIND THE MOMENT THE MODEL
+GROWS.** `sourcesOf()` enumerated four branches. This session adds figures, and
+any figure landing outside those four would have passed the "every figure names
+a stored field" assertion by never being looked at. Rewritten to walk the model
+recursively for `*Source` keys, so a new branch is covered by existing.
+
+**AN ENUMERATED CONTROL IS AS FRAGILE AS AN ENUMERATED GUARD — AND FOUR OF THIS
+SESSION'S NINE PROVED IT.** Written, they read as nine seams covered. Run, four
+came back wrong, and each was a real hole rather than a harness slip:
+
+* **NC2** dropped `overtime_windows` from the bridge and the self-proof stayed
+  GREEN. That is a fact about the SPECIMEN: the pilot_scale window prices no
+  overtime, so the argument is inert on it. **The self-proof is only as strong
+  as the features its specimen exercises** — re-pointed at `cost_model`, which
+  every ledger figure depends on, and the specimen limitation is carried.
+* **NC5** stripped `rollup_of` from the DOLLAR metric and everything stayed
+  green, because the only decomposition anyone checked was the block's own
+  arithmetic. The metric rollup — the thing the consolidator verifies, and
+  therefore the thing that makes clause (2) structural — **had no test at all.**
+  W2.1 gave the objective-space rollup one; W2.2 owed the dollar rollup the
+  same, and the control is what collected the debt.
+* **NC9** swapped utilization's numerator for the ELAPSED span and stayed green,
+  because the guard used unchunked operations where working minutes and elapsed
+  span are the same number. Only a RESUMABLE op can see the difference. 4B.20's
+  own lesson, landing on 4B.20's own guard, one session after it was written.
+* **NC7** never matched: a literal em dash in the source, spelled as a `\u`
+  escape inside a bytes literal, is six ASCII characters. ANCHOR NOT FOUND is
+  treated as a FAILURE by this harness rather than a skip, which is the only
+  reason it was seen.
+
+Three new guards were written to close the holes the controls found, and the
+final run is **9/9 red, every restore byte-identical**.
+
+### THE SECOND FINDING: the extractor prices a plan that places nothing
+
+`price_placements` was given a coverage check because a guard written to assert
+the OPPOSITE came back the other way. The extractor does not fail on a placement
+set covering no operations — it **prices** it, as a plan where every demand is
+late, and on the 40-order window it returns a confident **$1,520.00**.
+
+A capture that silently came back empty or partial would therefore not raise. It
+would produce a plausible first-plan price that is not a price of this plan at
+all, and the money story would compare the solver's plan against a fiction —
+with a dollar sign on it, which is precisely what the amendment exists to make
+safe. So the amendment's premise (BOTH endpoints are placements of the same
+plan) is now CHECKED rather than assumed: the caller passes the operation set
+the final plan placed, and a capture that does not place the same ones is
+REFUSED, falling back to the objective-space story.

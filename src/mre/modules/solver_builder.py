@@ -425,7 +425,10 @@ def solve_two_stage(
     s1 = SolveRunner(
         time_limit_seconds=time_limit_seconds, num_search_workers=num_search_workers,
         random_seed=random_seed, deterministic_time=cap1,
-    ).solve(model, var_map, stage1_reporter)
+        # W2.2: the trail is DEFERRED to the caller. Only it will know
+        # the shipped plan (stage 2's placements) and therefore only it
+        # can price the story's final endpoint against the real ledger.
+    ).solve(model, var_map, stage1_reporter, defer_progress=True)
     if (not terms or not free_start_vars or s1.objective is None
             or s1.status not in ("OPTIMAL", "FEASIBLE")):
         return replace(
@@ -494,6 +497,10 @@ def solve_two_stage(
         # rolling twin in `rolling_horizon._two_stage_solve` — one rule, both
         # seams, because a defect class fixed at one seam is not fixed.
         incumbent_trail=s1.incumbent_trail,
+        # …and so does the FIRST INCUMBENT's placements (W2.2): the money
+        # story's first endpoint belongs to the cost search that produced
+        # the trail, not to the tiebreak that reshuffled its starts.
+        first_incumbent_values=s1.first_incumbent_values,
     ), True
 
 

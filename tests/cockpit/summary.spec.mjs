@@ -50,6 +50,27 @@ const TRAIL_PRESENT = {
   ],
 };
 
+// R-SP1 AMENDMENT 1 — the same trail with both endpoints ledger-priced.
+const CLAUSE_3_PRICED =
+  "Both dollar figures above are real ledger costs: the solver's first "
+  + "workable plan was priced by the same extractor that priced the finished "
+  + "plan, so their difference is ledger arithmetic end to end. The trail below "
+  + "is a different measure - the solver's own internal cost score, not "
+  + "dollars - and the two are never mixed.";
+
+const TRAIL_PRICED = {
+  ...TRAIL_PRESENT,
+  priced: true,
+  first_plan_cost: 18905.42,
+  final_plan_cost: 10304.58,
+  dollar_improvement_abs: 8600.84,
+  dollar_improvement_pct: 45.49,
+  clause_3_label: CLAUSE_3_PRICED,
+  capture_note: "",
+  headline: "The solver's first workable plan would have cost $18,905.42; "
+          + "the plan it finished on costs $10,304.58 - 45.5% less.",
+};
+
 const TRAIL_FLAT = {
   ...TRAIL_PRESENT, count: 1, flat: true, final: 1_240_000,
   improvement_abs: 0, improvement_pct: 0,
@@ -59,12 +80,39 @@ const TRAIL_FLAT = {
 };
 
 /** Serve the fixture document with `solver.progress` set (or left absent). */
-async function boot(page, { progress = null, schedule = ROLLING } = {}) {
-  if (progress) {
+const STATISTICS = {
+  late_demands: 3, on_time_demands: 11, demands_counted: 14,
+  changeover_minutes: 220,
+  lateness_definition: "a demand is LATE when its projected completion is after "
+    + "its declared due date (lateness_minutes > 0)",
+  changeover_definition: "the sum of each RUNNING operation's setup duration",
+  utilization_definition: "working minutes billed on this resource (the sum of "
+    + "each operation's own run windows, excluding calendar pauses) divided by "
+    + "the open calendar minutes flattened for this resource across the "
+    + "solver's planning horizon",
+  utilization_by_resource: {},
+};
+
+async function boot(page, { progress = null, statistics = null,
+                            schedule = ROLLING } = {}) {
+  if (progress || statistics) {
     await page.route(`**/schedules/${schedule}`, async (route) => {
       const res = await route.fetch();
       const body = await res.json();
-      body.data.solver.progress = progress;
+      if (progress) body.data.solver.progress = progress;
+      if (statistics) {
+        // key the utilization map to real lanes so the names resolve
+        const lanes = (body.data.resources || []).slice(0, 3);
+        const by = {};
+        lanes.forEach((l, i) => {
+          by[l.resource_id] = i === 2
+            ? { working_minutes: 90, open_capacity_minutes: null, utilization: null }
+            : { working_minutes: 300 * (i + 1),
+                open_capacity_minutes: 1200,
+                utilization: 0.25 * (i + 1) };
+        });
+        body.data.statistics = { ...statistics, utilization_by_resource: by };
+      }
       await route.fulfill({ response: res, body: JSON.stringify(body) });
     });
   }
@@ -139,15 +187,34 @@ test("clause (2) and clause (3) render VERBATIM", async ({ page }) => {
   await expect(page.locator("#sm-clause-3")).toHaveText(CLAUSE_3);
 });
 
-test("no dollar sign touches the trail (R-DP12 / R-SP1 clause 3)", async ({ page }) => {
-  await boot(page, { progress: TRAIL_PRESENT });
+test("no dollar sign touches the SOLVER-UNITS ZONE (R-DP12 / R-SP1 clause 3)",
+  async ({ page }) => {
+    // W2.2 RESCOPED THIS GUARD, AND THE AUDIT IS WHY. W2.1 asserted over three
+    // named selectors while the progress section had grown four more; a `$`
+    // injected into `#sm-window-key` left it GREEN (proven at HEAD by
+    // injection, restore byte-identical). A ZONE can be asserted whole; a list
+    // has to be remembered. Everything inside `#sm-trail-zone` is the scaled
+    // objective's, in BOTH regimes.
+    await boot(page, { progress: TRAIL_PRESENT });
+    await openSummary(page);
+    const zone = await page.locator("#sm-trail-zone").innerText();
+    expect(zone, "the solver-units zone rendered the objective as money")
+      .not.toContain("$");
+    // on an UNPRICED trail nothing in the whole section is money either
+    const section = await page.locator("#sm-progress").innerText();
+    expect(section).not.toContain("$");
+    // …while the ledger, which IS money, keeps its dollar sign.
+    await expect(page.locator("#sm-total")).toContainText("$");
+  });
+
+test("the zone stays money-free even when the headline is PRICED", async ({ page }) => {
+  // The boundary the amendment draws: two real ledger costs above, the scaled
+  // objective below, and never the two mixed.
+  await boot(page, { progress: TRAIL_PRICED });
   await openSummary(page);
-  for (const sel of ["#sm-trail", "#sm-progress-story", "#sm-proof-floor"]) {
-    const text = await page.locator(sel).innerText();
-    expect(text, `${sel} rendered the scaled objective as money`).not.toContain("$");
-  }
-  // …while the ledger, which IS money, keeps its dollar sign.
-  await expect(page.locator("#sm-total")).toContainText("$");
+  const zone = await page.locator("#sm-trail-zone").innerText();
+  expect(zone).not.toContain("$");
+  await expect(page.locator("#sm-priced")).toContainText("$");
 });
 
 test("clause (1) — the trail names the one window it belongs to", async ({ page }) => {
@@ -210,18 +277,17 @@ test("dollars first — the ledger total precedes the search story on the page",
   await expect(page.locator("#sm-total .sm-total-lbl")).toHaveText("total ledger cost");
 });
 
-test("the three unsourceable statistics are named on the screen", async ({ page }) => {
-  await boot(page, { progress: TRAIL_PRESENT });
+test("W2.2 — the gap block is GONE, not left as an empty heading", async ({ page }) => {
+  // W2.1 rendered three named gaps here because nothing stored them. W2.2
+  // landed the rollups, so there is nothing to name — and an empty heading
+  // reads as a failure to load, so the block is skipped entirely. The
+  // machinery is still in the code, exercised by the model spec, ready for the
+  // next statistic nobody stores.
+  await boot(page, { progress: TRAIL_PRESENT, statistics: STATISTICS });
   await openSummary(page);
-  const gaps = page.locator("#sm-gaps .sm-gaplist li");
-  await expect(gaps).toHaveCount(3);
-  const text = await page.locator("#sm-gaps").innerText();
-  for (const label of ["late / on-time orders", "utilization by machine",
-                       "total changeover minutes"]) {
-    expect(text).toContain(label);
-  }
-  // each names where it SHOULD come from — a gap with no address is a shrug
-  expect(text).toContain("Should come from");
+  await expect(page.locator("#sm-gaps")).toHaveCount(0);
+  const screen = await page.locator("#summary-screen").innerText();
+  expect(screen).not.toContain("Asked for, and not shown");
 });
 
 test("every rendered cost row names the document field it came from", async ({ page }) => {
@@ -258,3 +324,113 @@ test("close returns the planner to the board with nothing changed", async ({ pag
   await expect(page.locator("#summary-screen")).toHaveCount(0);
   await expect(page.locator("#tl")).toBeVisible();
 });
+
+// ======================================================================
+// W2.2 — R-SP1 AMENDMENT 1: THE DOLLAR STORY
+// ======================================================================
+
+test("PRICED — the money story renders in dollars at both ends", async ({ page }) => {
+  await boot(page, { progress: TRAIL_PRICED });
+  await openSummary(page);
+  const pair = await page.locator("#sm-priced").innerText();
+  expect(pair).toContain("$18,905");
+  expect(pair).toContain("$10,305");
+  expect(pair).toContain("the solver's first workable plan would have cost");
+  expect(pair).toContain("the finished plan costs");
+  // the difference is stated as the search's own take-off, never as a saving
+  // against anything the solver did not produce
+  expect(pair).toContain("the search took off its own first plan");
+  await shot(page, "summary_trail_priced");
+});
+
+test("clause (2) is UNCHANGED in the priced regime and renders verbatim",
+  async ({ page }) => {
+    // The amendment leaves clause (2) exactly as it was: this is the solver
+    // against its own first plan, and that sentence is what keeps a dollar
+    // figure from reading as a saving against the customer's process.
+    await boot(page, { progress: TRAIL_PRICED });
+    await openSummary(page);
+    await expect(page.locator("#sm-clause-2")).toHaveText(CLAUSE_2);
+    // clause (3) is the one that changes, and it names the boundary
+    const c3 = await page.locator("#sm-clause-3").innerText();
+    expect(c3).toContain("real ledger costs");
+    expect(c3).toContain("never mixed");
+  });
+
+test("the wall-cost note appears only when the server sets it", async ({ page }) => {
+  await boot(page, { progress: TRAIL_PRICED });
+  await openSummary(page);
+  await expect(page.locator("#sm-capture-note")).toHaveCount(0);
+  const withNote = { ...TRAIL_PRICED,
+    capture_note: "Capturing the first plan costs a moment of real time…" };
+  await page.reload();
+  await boot(page, { progress: withNote });
+  await openSummary(page);
+  await expect(page.locator("#sm-capture-note")).toContainText("Capturing");
+});
+
+test("an UNPRICED trail draws no priced block at all", async ({ page }) => {
+  await boot(page, { progress: TRAIL_PRESENT });
+  await openSummary(page);
+  await expect(page.locator("#sm-priced")).toHaveCount(0);
+  // …and still tells the objective-space story
+  await expect(page.locator("#sm-trail")).toBeVisible();
+});
+
+// ======================================================================
+// W2.2 — THE THREE ROLLUPS ON THE SCREEN
+// ======================================================================
+
+test("the three named gaps are replaced by figures", async ({ page }) => {
+  await boot(page, { progress: TRAIL_PRICED, statistics: STATISTICS });
+  await openSummary(page);
+  // the gap block is gone entirely — not an empty heading
+  await expect(page.locator("#sm-gaps")).toHaveCount(0);
+  const tiles = await page.locator("#sm-tiles").innerText();
+  expect(tiles).toContain("orders finishing late");
+  expect(tiles).toContain("orders on time or early");
+  expect(tiles).toContain("changeover minutes");
+  await expect(page.locator("#sm-util")).toBeVisible();
+  await shot(page, "summary_rollups");
+});
+
+test("utilization renders its denominator, both components, and the no-ratio row",
+  async ({ page }) => {
+    await boot(page, { progress: TRAIL_PRICED, statistics: STATISTICS });
+    await openSummary(page);
+    const rows = page.locator("#sm-util-table tbody tr");
+    await expect(rows).toHaveCount(3);
+    // both components beside the ratio, so the reader checks the arithmetic
+    const first = await rows.nth(0).innerText();
+    expect(first).toContain("min");
+    // 4B.20: the definition travels with the figure, worded by the SERVER
+    const def = await page.locator("#sm-util-definition").innerText();
+    expect(def).toContain("open calendar minutes");
+    expect(def).toContain("may differ");     // names the visible-window figure
+    // the machine with no denominator keeps its row and says so
+    const table = await page.locator("#sm-util-table").innerText();
+    expect(table).toContain("no open capacity recorded");
+  });
+
+test("every rollup figure names the document field it came from", async ({ page }) => {
+  await boot(page, { progress: TRAIL_PRICED, statistics: STATISTICS });
+  await openSummary(page);
+  const missing = await page.evaluate(() =>
+    [...document.querySelectorAll("#sm-tiles .sm-tile")]
+      .filter((n) => !n.dataset.source).length);
+  expect(missing).toBe(0);
+  await expect(page.locator("#sm-util"))
+    .toHaveAttribute("data-source", "statistics.utilization_by_resource");
+});
+
+test("a document with no statistics still renders, with no rollup figures",
+  async ({ page }) => {
+    // The append-only absence: a board solved before the rollups existed.
+    await boot(page, { progress: TRAIL_PRESENT });
+    await openSummary(page);
+    await expect(page.locator("#sm-util")).toHaveCount(0);
+    const tiles = await page.locator("#sm-tiles").innerText();
+    expect(tiles).not.toContain("orders finishing late");
+    // and the screen is still a screen
+    await expect(page.locator("#sm-total")).toBeVisible();
+  });

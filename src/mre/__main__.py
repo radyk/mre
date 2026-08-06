@@ -492,6 +492,39 @@ def main(argv: list[str] | None = None) -> int:
         deterministic_time_total=DET_TOTAL_MONOLITHIC,
         cap_stage1=False,   # the cost proof stays uncapped, exactly as before
     )
+    # W2.2 (R-SP1 AMENDMENT 1) — PRICE, THEN EMIT, HERE.
+    #
+    # W2.1 emitted the trail inside `SolveRunner`. That cannot survive pricing:
+    # the shipped plan on a two-stage solve is STAGE 2's placements, and stage
+    # 1's runner has not seen them, so a "final" priced there would be a number
+    # no ledger agrees with. `solve_two_stage` now defers, and this — the caller
+    # that knows the shipped plan AND owns the plant tables — prices both
+    # endpoints through the one bridge and emits the records.
+    from mre.modules.plan_pricing import PricingInputs, price_placements
+    from mre.modules.solve_progress import emit_solve_progress
+
+    _pricing_inputs = PricingInputs(
+        snapshot_id=snap_id, operations=ops, workpackages=wps,
+        resources=resources, fulfillments=fuls, demands=demands,
+        cost_model=cost_model, cal_windows=var_map.cal_windows,
+        op_eligible=var_map.op_eligible,
+        overtime_windows=var_map.overtime_windows)
+    _shipped = solve_result.solve_values
+    _required_ops = set(getattr(_shipped, "op_resource", {}) or {})
+    _first_cost = price_placements(solve_result.first_incumbent_values,
+                                   _pricing_inputs, require_ops=_required_ops)
+    # The FINAL endpoint is priced through the SAME bridge rather than taken
+    # from the M7 extraction below, for two reasons: M7 has not run yet, and a
+    # difference of two numbers from two code paths is not ledger arithmetic
+    # end to end. The guard proves this reproduces M7's total to the cent.
+    _final_cost = price_placements(_shipped, _pricing_inputs)
+    emit_solve_progress(
+        r_rep, trail=solve_result.incumbent_trail, status=solve_result.status,
+        best_bound=solve_result.best_bound, gap=solve_result.gap,
+        det_consumed=solve_result.det_consumed,
+        det_budget=DET_TOTAL_MONOLITHIC, window_key=None,
+        first_plan_cost=_first_cost, final_plan_cost=_final_cost)
+
     # W2.1 (R-SP1) — THE TRAIL's ARTIFACT ON THE MONOLITHIC PATH.
     #
     # `SolveRunner` wrote the Event and the Metrics (it has the reporter); the
@@ -512,6 +545,7 @@ def main(argv: list[str] | None = None) -> int:
          "seed": args.solver_seed, "num_search_workers": args.solver_workers,
          "det_budget": DET_TOTAL_MONOLITHIC,
          "objective_unit": "objective_units",
+         "first_plan_cost": _first_cost, "final_plan_cost": _final_cost,
          "incumbents": solve_result.incumbent_trail},
         out_dir / "solve_progress.json", reporter=r_rep)
     r_rep.end(RunStatus.SUCCESS if solve_result.status in ("OPTIMAL", "FEASIBLE") else RunStatus.PARTIAL)

@@ -274,7 +274,7 @@ from pydantic import BaseModel, model_validator
 
 from mre.contracts.vocabularies import ScheduleStatus
 
-CONTRACT_VERSION = "1.16"
+CONTRACT_VERSION = "1.17"
 
 # Exact decomposition tolerance: cost components are currency values
 # accumulated in float; "exactly" means to the cent, matching the
@@ -448,6 +448,34 @@ class SolveProgressBlock(BaseModel):
     best_bound: Optional[float] = None
     gap: Optional[float] = None
     objective_unit: str = "objective_units"
+    # ---- R-SP1 AMENDMENT 1 (contract 1.17) — THE DOLLAR PAIR ---------------
+    #
+    # ``priced`` is the amendment's admissibility test as a boolean: dollars are
+    # admissible EXACTLY when both endpoints are ledger-priced placements — the
+    # first incumbent captured mid-search and priced by the SAME extractor that
+    # priced the finished plan. Then both figures are real costs of real
+    # solver-produced plans and their difference is ledger arithmetic end to
+    # end, so no scaled objective reaches a planner surface and R-DP12 is
+    # untouched.
+    #
+    # FALSE is a first-class state, not a failure: a trail recorded before the
+    # amendment, or one whose first incumbent was never captured, renders the
+    # objective-space percentage exactly as clause (3) has always required.
+    # Three generations of trail, each honest.
+    #
+    # The fields above (``first``/``final``/``improvement_*``) remain the SCALED
+    # OBJECTIVE and keep their own names. Two measures, two names — a reader
+    # never has to guess which one a number is.
+    priced: bool = False
+    first_plan_cost: Optional[float] = None
+    final_plan_cost: Optional[float] = None
+    dollar_improvement_abs: Optional[float] = None
+    dollar_improvement_pct: Optional[float] = None
+    #: The amendment's wall-cost disclosure. Non-empty ONLY on a priced trail
+    #: whose solve was stopped by the wall clock — capture costs wall time, and
+    #: only there can it have touched the outcome. Empty under a deterministic
+    #: budget, because there is nothing to disclose.
+    capture_note: str = ""
     #: Authored server-side, exactly as ``CostProof.chip`` is: two surfaces
     #: composing their own wording is two surfaces that can state different
     #: things.
@@ -575,6 +603,25 @@ class ResourceLane(BaseModel):
     facility: Optional[str] = None
     pool: Optional[str] = None                 # pool external name if mapped
     calendar_windows: list[CalendarWindow] = []
+    # UTILIZATION, BOARD-SCOPE (contract 1.17, Session W2.2 B2). All three are
+    # None on a document assembled without the statistics payload, and
+    # ``utilization`` alone is None wherever the DENOMINATOR is unknown or zero
+    # — a ratio over no capacity is undefined, not nought, and a 0.0 there would
+    # be a claim about the plant manufactured from a fact about our inputs.
+    #
+    # BOTH COMPONENTS ARE CARRIED so a reader checks the arithmetic instead of
+    # trusting the adjective (the ``CoarseDensityCell`` precedent), and the
+    # definition that produced them travels on ``PlanStatisticsBlock``. 4B.20's
+    # defect was one denominator per surface; the fix is that the number never
+    # travels without the rule.
+    #
+    # NB this is NOT the figure the board's row strip shows. That one is
+    # recomputed over the VISIBLE WINDOW as the planner pans, which is a
+    # different and equally correct answer to a different question. They may
+    # differ, and the screen says so.
+    working_minutes: Optional[int] = None
+    open_capacity_minutes: Optional[int] = None
+    utilization: Optional[float] = None
     booked_through: Optional[datetime] = None  # last assignment end on this row (1.6):
     #                                            the moment it is booked through; None
     #                                            when the row carries no work. Computed
@@ -932,6 +979,42 @@ class RollingBlock(BaseModel):
     boundary_moves: list[BoundaryMoveBlock] = []
 
 
+class PlanStatisticsBlock(BaseModel):
+    """The three M7 rollups (contract 1.17, Session W2.2 Part B).
+
+    W2.1's summary screen asked for four statistics, could source one, and
+    rendered the other three as NAMED GAPS saying where they should come from.
+    This block is where they came from. Every figure here is computed by the
+    extractor beside the figure it must agree with — the counts beside the
+    per-demand lateness metrics, the changeover minutes over the same
+    WIP-filtered operation set the setup CHARGE is billed on — so the pair
+    cannot drift.
+
+    **THE DEFINITIONS TRAVEL WITH THE FIGURES.** ``*_definition`` are not
+    documentation; they are the fix for 4B.20, where one denominator per surface
+    turned two correct numbers into an apparent contradiction. A consumer that
+    renders a figure from this block renders its definition too, and therefore
+    cannot re-imply a denominator of its own.
+
+    ``late_demands + on_time_demands == demands_counted`` by construction, and
+    the same decomposition is verified by the consolidator on the evidence side.
+    The counts are DISTINCT from R-PD1's tardiness split, which decomposes a
+    COST: how many orders are late and how much of the charge was unavoidable
+    are two statements, and no surface may fuse them.
+    """
+    late_demands: int = 0
+    on_time_demands: int = 0
+    demands_counted: int = 0
+    lateness_definition: str = ""
+    changeover_minutes: int = 0
+    changeover_definition: str = ""
+    utilization_definition: str = ""
+    #: resource_id -> {working_minutes, open_capacity_minutes, utilization}.
+    #: Includes resources with NO work at 0%: a rollup whose members appear only
+    #: when non-empty cannot be read as a set, and an idle machine is a fact.
+    utilization_by_resource: dict = {}
+
+
 class Annotations(BaseModel):
     locks: list[str] = []                      # F1/A7 pins, rendered
     scenario: ScenarioBlock = ScenarioBlock()
@@ -954,5 +1037,9 @@ class ScheduleDocument(BaseModel):
     service_outcomes: list[ServiceOutcomeBlock] = []
     annotations: Annotations = Annotations()
     interaction: Optional[InteractionBlock] = None   # contract 1.2 (Tier-0 payload)
+    # THE PLAN STATISTICS (contract 1.17, W2.2). None on a document assembled
+    # from a run that predates the rollups — permanently, like every other
+    # append-only absence, and the screen has an honest state for it.
+    statistics: Optional[PlanStatisticsBlock] = None
     rolling: Optional[RollingBlock] = None           # contract 1.7 (sliced world);
     #                                                  None on a monolithic document

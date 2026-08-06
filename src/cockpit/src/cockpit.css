@@ -1254,3 +1254,29 @@ html, body {
   font: var(--fw-semibold) var(--fs-xs)/1 var(--font-mono); padding: 6px 9px;
 }
 .summary-open:hover { color: var(--ink); border-color: var(--muted-2); }
+
+/* --- W2.2: the priced pair, the solver-units zone, utilization -----------
+ * R-SP1 AMENDMENT 1. The priced pair is MONEY and sits above the zone; the
+ * zone below it is the scaled objective's and no dollar sign enters it. The
+ * separation is visual as well as structural so a reader can see which
+ * measure they are looking at without reading the labels. */
+.sm-priced {
+  margin: 12px 0 4px; padding: 12px 14px;
+  background: var(--panel-2); border: 1px solid var(--grid);
+  border-radius: var(--radius-sm);
+}
+.sm-priced-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; padding: 3px 0;
+}
+.sm-priced-lbl { color: var(--muted); font-size: var(--fs-xs); }
+.sm-priced-num { font: var(--fw-semibold) var(--fs-md)/1.1 var(--font-mono); }
+.sm-priced-delta {
+  border-top: 1px solid var(--grid); margin-top: 6px; padding-top: 8px;
+}
+.sm-priced-delta .sm-priced-lbl { color: var(--ink); }
+.sm-priced-delta .sm-priced-num { color: var(--proof-proved); }
+/* The solver-units zone: everything inside is the scaled objective's. */
+.sm-trail-zone { margin-top: 12px; }
+.sm-util { margin-top: 18px; }
+.sm-util .sm-k { color: var(--ink); }

@@ -1,4 +1,4 @@
-"""R-SP1 at the DOCUMENT seam — contract 1.16 `solver.progress`.
+"""R-SP1 at the DOCUMENT seam — `solver.progress` (contract 1.17).
 
 Two assemblers build the block from two different SOURCES: the monolithic one
 reads the `solve_progress` Event out of evidence, the rolling one reads the
@@ -30,7 +30,7 @@ REF = datetime(2026, 1, 5, tzinfo=UTC)
 
 def test_the_contract_version_names_this_block():
     from mre.contracts.schedule_document import CONTRACT_VERSION
-    assert CONTRACT_VERSION == "1.16"
+    assert CONTRACT_VERSION == "1.17"
 
 
 def test_a_solver_block_without_a_trail_is_absent_not_empty():
@@ -42,7 +42,7 @@ def test_a_solver_block_without_a_trail_is_absent_not_empty():
     assert SolverBlock(status="OPTIMAL").progress is None
 
 
-def test_a_pre_1_16_document_still_parses(tmp_path):
+def test_a_pre_amendment_document_still_parses(tmp_path):
     """The bump must not orphan the stored boards. Their documents say 1.15 and
     carry no `progress`, and they are never re-minted."""
     from mre.contracts.schedule_document import ScheduleDocument
@@ -207,17 +207,38 @@ def test_THE_ASSEMBLER_puts_the_block_on_a_real_rolling_document(rolling_plant_a
     plant, view = rolling_plant_and_view
     doc = assemble_rolling_document(plant=plant, view=view,
                                     schedule_id="sched-w21", run_id="run-w21")
-    assert doc.contract_version == "1.16"
+    assert doc.contract_version == "1.17"
     assert doc.solver.progress is not None, (
         "a solved rolling window shipped a document with no search history")
     p = doc.solver.progress
     assert p.stage == "cost"
     assert p.count == len(view.incumbent_trail) > 1
     assert p.window_key == view.window_start.isoformat()
-    assert p.headline and "$" not in p.headline
     assert p.clause_2_label and p.clause_3_label
     # the block's terminal point agrees with the solver telemetry beside it
     assert p.final == pytest.approx(doc.solver.objective)
+
+    # W2.2 (R-SP1 AMENDMENT 1) — THE TWO REGIMES, AND WHICH ONE MAY CARRY MONEY.
+    #
+    # W2.1 asserted a bare "no $ in the headline". That was right while every
+    # trail was objective-space; it is now the wrong rule, because a PRICED
+    # trail's headline states two real ledger costs and that is the whole point
+    # of the amendment. The rule that survives is the boundary: money in the
+    # headline only when `priced`, and NEVER in the objective-space fields.
+    assert isinstance(p.priced, bool)
+    if p.priced:
+        assert p.first_plan_cost is not None and p.final_plan_cost is not None
+        assert "$" in p.headline
+        # …and the dollar pair decomposes exactly
+        assert p.first_plan_cost - p.final_plan_cost == pytest.approx(
+            p.dollar_improvement_abs, abs=0.005)
+        # the final priced endpoint IS the plan the board publishes
+        assert p.final_plan_cost == pytest.approx(doc.cost_summary.total, abs=0.005)
+    else:
+        assert "$" not in p.headline
+    # The objective-space fields are the scaled objective in BOTH regimes and
+    # never wear a unit that suggests otherwise.
+    assert p.objective_unit == "objective_units"
 
 
 def test_a_window_that_ran_no_search_has_no_block():

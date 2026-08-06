@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import {
   summaryModel, progressModel, moneyModel, portfolioModel, statsModel,
-  sourcesOf, STORED_SOURCES, STAT_GAPS,
+  utilizationModel, sourcesOf, unsourcedFigures, STORED_SOURCES, STAT_GAPS,
 } from "../../src/cockpit/src/summarymodel.js";
 
 const trail = (...objs) => objs.map((o, i) => ({
@@ -16,6 +16,32 @@ const trail = (...objs) => objs.map((o, i) => ({
 }));
 
 // A document with a trail, as the assembler builds one.
+// A contract-1.17 document: priced trail + the three rollups.
+const withStats = () => {
+  const d = withTrail();
+  d.solver.progress = {
+    ...d.solver.progress,
+    priced: true, first_plan_cost: 18905.42, final_plan_cost: 10304.58,
+    dollar_improvement_abs: 8600.84, dollar_improvement_pct: 45.5,
+    capture_note: "",
+    headline: "The solver's first workable plan would have cost $18,905.42; "
+            + "the plan it finished on costs $10,304.58 - 45.5% less.",
+  };
+  d.statistics = {
+    late_demands: 3, on_time_demands: 37, demands_counted: 40,
+    changeover_minutes: 220,
+    utilization_definition: "working minutes billed on this resource ... divided "
+      + "by the open calendar minutes flattened for this resource across the "
+      + "solver's planning horizon",
+    utilization_by_resource: {
+      R1: { working_minutes: 300, open_capacity_minutes: 600, utilization: 0.5 },
+      R2: { working_minutes: 120, open_capacity_minutes: null, utilization: null },
+    },
+  };
+  d.resources = [{ resource_id: "R1", external_name: "MILL-01" }];
+  return d;
+};
+
 const withTrail = (over = {}) => ({
   schedule_id: "rolling-test-000",
   cost_summary: {
@@ -163,27 +189,85 @@ test("the statistics row renders only stored figures", () => {
     .toBe(true);
 });
 
-test("the three unsourceable statistics are NAMED, not computed and not dropped", () => {
-  // The brief asked for late/on-time counts, utilization by machine and total
-  // changeover minutes. None is stored. An honest gap beats a number with no
-  // provenance — and a gap that is silently dropped is neither.
-  const s = statsModel(withTrail());
-  expect(s.gaps.map((g) => g.key)).toEqual(
-    ["late_counts", "utilization", "changeover"]);
-  for (const g of s.gaps) {
-    expect(g.why.length).toBeGreaterThan(10);
-    expect(g.from.length).toBeGreaterThan(10);   // where it SHOULD come from
-  }
+test("W2.2 - the three named gaps are CLOSED by rollups, not by a client-side sum", () => {
+  // W2.1 named three gaps because nothing stored them. W2.2 landed the M7
+  // rollups, so the list is empty - and the machinery stays, so the screen can
+  // still name the next gap that appears.
+  const s = statsModel(withStats());
+  expect(s.gaps).toEqual([]);
+  expect(STAT_GAPS).toEqual([]);
+  const keys = s.stats.map((x) => x.key);
+  expect(keys).toContain("late");
+  expect(keys).toContain("on_time");
+  expect(keys).toContain("changeover");
 });
 
-test("the model never counts late orders itself", () => {
-  // The document carries per-order lateness; tallying it here would be exactly
-  // the frontend computation the gap exists to refuse.
-  const doc = withTrail();
+test("the model still never tallies late orders itself", () => {
+  // The count now comes from `statistics`. A document with per-order outcomes
+  // but NO rollup must still refuse to tally them - that was the whole rule,
+  // and landing the rollup does not license the client-side sum.
+  const doc = withTrail();                       // no `statistics` block
   doc.service_outcomes = [{ lateness_min: 10 }, { lateness_min: -5 }];
   const keys = statsModel(doc).stats.map((x) => x.key);
   expect(keys).not.toContain("late");
-  expect(keys).not.toContain("late_counts");
+  expect(keys).not.toContain("on_time");
+});
+
+test("late + on-time render as counts, distinct from the tardiness split", () => {
+  // R-PD1: one is a COUNT of orders, the other DECOMPOSES a charge. Fusing them
+  // is the category error the screen has kept apart since W2.1.
+  const m = summaryModel(withStats());
+  const late = m.stats.stats.find((s) => s.key === "late");
+  expect(late.kind).toBe("count");
+  const floor = m.stats.stats.find((s) => s.key === "tardiness_floor");
+  expect(floor.kind).toBe("money");
+});
+
+test("utilization carries its denominator and both components", () => {
+  const u = utilizationModel(withStats());
+  expect(u.definition).toContain("open calendar minutes");
+  const r = u.rows.find((x) => x.resourceId === "R1");
+  expect(r.workingMinutes).toBe(300);
+  expect(r.openCapacityMinutes).toBe(600);
+  expect(r.utilization).toBeCloseTo(0.5, 6);
+  expect(r.name).toBe("MILL-01");            // never a raw UUID on screen
+});
+
+test("a machine with no denominator keeps its row and states no ratio", () => {
+  // Dropping it would make the list read as "every machine we could measure".
+  const u = utilizationModel(withStats());
+  const r = u.rows.find((x) => x.resourceId === "R2");
+  expect(r).toBeTruthy();
+  expect(r.openCapacityMinutes).toBeNull();
+  expect(r.utilization).toBeNull();
+});
+
+test("utilization is absent, not empty, on a document with no statistics", () => {
+  expect(utilizationModel(withTrail())).toBeNull();
+});
+
+test("PRICED - both endpoints are dollars and the pair decomposes", () => {
+  const p = progressModel(withStats());
+  expect(p.priced).toBe(true);
+  expect(p.firstPlanCost).toBe(18905.42);
+  expect(p.finalPlanCost).toBe(10304.58);
+  expect(p.firstPlanCost - p.finalPlanCost).toBeCloseTo(p.dollarImprovementAbs, 2);
+});
+
+test("UNPRICED - a pre-amendment trail keeps the objective-space story", () => {
+  // Three generations of trail, each honest. `priced: false` is a state, not a
+  // fallback pretending to be the real thing.
+  const p = progressModel(withTrail());
+  expect(p.priced).toBe(false);
+  expect(p.firstPlanCost).toBeNull();
+  expect(p.improvementPct).toBe(25);       // the percentage still renders
+});
+
+test("the wall-cost note is carried only where the server set it", () => {
+  expect(progressModel(withStats()).captureNote).toBe("");
+  const doc = withStats();
+  doc.solver.progress.capture_note = "Capturing the first plan costs a moment";
+  expect(progressModel(doc).captureNote).toContain("Capturing");
 });
 
 // ---------------------------------------------------------------------------
@@ -191,7 +275,7 @@ test("the model never counts late orders itself", () => {
 // ---------------------------------------------------------------------------
 
 test("every figure the model produces names a stored document field", () => {
-  const doc = withTrail();
+  const doc = withStats();
   doc.solver.portfolio = { k: 3, seed0: 42, winner_seed: 44, members: [] };
   const used = sourcesOf(summaryModel(doc));
   expect(used.length).toBeGreaterThan(0);
@@ -200,6 +284,22 @@ test("every figure the model produces names a stored document field", () => {
       `${src} is not a declared stored source — a figure was computed here`)
       .toContain(src);
   }
+});
+
+test("...and nothing the model shows is left uncited", () => {
+  // The other half of the rule. `sourcesOf` proves what we cite is stored; this
+  // proves there is nothing we show that we did not cite.
+  expect(unsourcedFigures(summaryModel(withStats()))).toEqual([]);
+});
+
+test("THE GUARD WALKS THE MODEL - a new branch is covered by existing", () => {
+  // W2.2's predicate audit: the first `sourcesOf` hand-listed four branches, so
+  // a figure added outside them would have passed by never being looked at.
+  // This asserts the walk reaches a source the enumerated version never would.
+  const m = summaryModel(withStats());
+  expect(sourcesOf(m)).toContain("statistics.utilization_by_resource");
+  const planted = { ...m, someNewBlock: { deep: { thing: { source: "solver.status" } } } };
+  expect(sourcesOf(planted)).toContain("solver.status");
 });
 
 test("a monolithic document yields no rolling counts and no crash", () => {

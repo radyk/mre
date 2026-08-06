@@ -51,6 +51,13 @@ class ExtractResult:
     assignments: list[dict[str, Any]]
     service_outcomes: list[dict[str, Any]]
     cost_ledger: dict[str, float]
+    # THE THREE ROLLUPS (Session W2.2 Part B). The payload
+    # ``plan_statistics.build`` composes: late/on-time counts, changeover
+    # minutes, and per-resource utilization with the definition that produced
+    # it. Empty dict on nothing — never None, so a consumer's ``.get`` is safe.
+    # It also rides in ``schedule["summary_metrics"]``, which is what lets the
+    # MONOLITHIC assembler read it without a second producer.
+    statistics: dict[str, Any] = field(default_factory=dict)
 
 
 class Extractor:
@@ -125,6 +132,12 @@ class Extractor:
         assignments: list[dict] = []
         production_regular_cost = 0.0
         production_overtime_cost = 0.0
+        # W2.2 B2 — WORKING minutes per resource, accumulated in the SAME loop
+        # and from the SAME quantity production cost is billed on (`dur_min`,
+        # which for a resumable op is the sum of its own chunk spans, never the
+        # elapsed span). Utilization's numerator and the plant's wage bill are
+        # therefore the same minutes, and cannot drift (4B.20).
+        working_minutes_by_resource: dict[str, int] = {}
 
         for op_id, chosen_rid in solve_values.op_resource.items():
             op = ops_by_id.get(op_id, {})
@@ -237,6 +250,9 @@ class Extractor:
 
             # Emit reconstructed Decision
             decision_id = str(uuid.uuid4())
+            working_minutes_by_resource[chosen_rid] = (
+                working_minutes_by_resource.get(chosen_rid, 0) + int(dur_min))
+
             is_chunked = len(run_windows) > 1
             if reporter is not None:
                 chosen: dict[str, Any] = {
@@ -431,10 +447,30 @@ class Extractor:
         # matches it, so total = production + setup + tardiness still verifies
         # exactly. The sunk portion is reported separately (informational, NOT
         # part of the decomposition) so a WIP cost report can still see it.
-        new_setup_ops = sum(
-            1 for o in operations
-            if o.get("wip_status") not in ("complete", "in_progress")
-        )
+        # W2.2 B3 — THE MINUTES AND THE CHARGE SHARE A POPULATION, NOT A SUM.
+        #
+        # The brief asked for changeover minutes "summed where cost is summed".
+        # There is nothing to sum beside: the charge is `count * fixed_per_setup`
+        # — a fee PER RUNNING OPERATION, with no minute quantity anywhere in it.
+        # What the same-source-walk discipline actually buys here is a shared
+        # POPULATION: the minutes come from each op's own setup_duration, over
+        # EXACTLY the WIP-filtered set the fee is billed on. Filter the two
+        # differently and the plant's changeover time and its changeover bill
+        # describe different plans.
+        def _is_new_setup(o: dict) -> bool:
+            return o.get("wip_status") not in ("complete", "in_progress")
+
+        changeover_minutes = 0
+        for o in operations:
+            if not _is_new_setup(o):
+                continue                      # sunk before the reference date
+            rid = solve_values.op_resource.get(o.get("id", ""))
+            per_res = o.get("resource_setup_durations", {}) or {}
+            raw = (per_res.get(rid) if rid in per_res
+                   else o.get("setup_duration", "PT0S"))
+            changeover_minutes += _td_to_minutes(_parse_td(raw))
+
+        new_setup_ops = sum(1 for o in operations if _is_new_setup(o))
         sunk_setup_ops = len(operations) - new_setup_ops
         setup_cost = new_setup_ops * setup_fixed        # one setup per RUNNING op
         sunk_setup_cost = sunk_setup_ops * setup_fixed  # already incurred, pre-reference
@@ -483,6 +519,21 @@ class Extractor:
         if is_scenario:
             schedule["summary_metrics"]["is_scenario"] = True
 
+        # W2.2 Part B — the three rollups, composed once and carried twice: on
+        # the result (the rolling assembler reads it off the view) and inside
+        # summary_metrics (the monolithic assembler reads the Schedule entity).
+        # ONE producer, two readers — W2.1's pattern, same reason.
+        from mre.modules import plan_statistics as _ps
+        statistics = _ps.build(
+            service_outcomes=service_outcomes,
+            working_minutes=working_minutes_by_resource,
+            changeover_minutes=changeover_minutes,
+            cal_windows=cal_windows,
+        )
+        schedule["summary_metrics"]["statistics"] = statistics
+        if reporter is not None:
+            _ps.emit(reporter, statistics)
+
         if snapshot_writer is not None:
             self._persist_entities(
                 snapshot_writer, snapshot_id,
@@ -495,6 +546,7 @@ class Extractor:
             assignments=assignments,
             service_outcomes=service_outcomes,
             cost_ledger=cost_ledger,
+            statistics=statistics,
         )
 
     # ------------------------------------------------------------------

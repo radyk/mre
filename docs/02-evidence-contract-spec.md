@@ -269,6 +269,44 @@ type* — nothing here needs one.
 states. The schedule document *does* gain `solver.progress` in the same change,
 and that bump — to **1.16** — is owed by the block, not by these records.
 
+**The dollar pair and the plan rollups** (added 2026-08-05, W2.2 — R-SP1
+AMENDMENT 1 and the three M7 rollups). Two additions to the Metric vocabulary,
+both governed by §4.4's decomposition rule:
+
+| rollup | components | who emits |
+|---|---|---|
+| `solve.first_plan_cost` | `solve.final_plan_cost` + `solve.plan_cost_improvement` | M6, beside the trail Event |
+| `service.demands_counted` | `service.late_demands` + `service.on_time_demands` | M7, beside the per-demand `lateness_minutes` |
+
+Beside them, three non-rollup Metrics: `setup.changeover_minutes` (M7), and the
+per-resource pair `resource.working_minutes` / `resource.open_capacity_minutes`
+with `resource.utilization` as their ratio.
+
+**A RATIO IS NOT A ROLLUP, AND ITS DENOMINATOR RIDES ON THE RECORD.**
+`resource.utilization` cannot decompose — it is a quotient, not a sum — so its
+two components are emitted as their own Metrics beside it and the reader checks
+the arithmetic rather than trusting the adjective. Every one of the three
+carries the DEFINITION that produced it in its `message`. This is the fix for
+4B.20, where one denominator per surface turned two correct numbers into an
+apparent contradiction: a figure that travels without its rule invites the next
+surface to supply one. Where no calendar was supplied there is **no ratio at
+all** — the components are still emitted, and a 0.0 would be a claim about the
+plant manufactured from a fact about our inputs.
+
+**The dollar metrics are DISTINCT from the objective-space set they sit beside**
+(`solve.first_incumbent` and friends, added the same day by W2.1). Both stay,
+with different names and different units — `currency` against `objective_units`
+— because they measure different things and a reader must never have to guess
+which. R-DP12 admits the scaled objective only as labelled solver telemetry; the
+dollar pair is admissible because BOTH its endpoints were priced by the ledger
+extractor that prices the finished plan, so their difference is ledger
+arithmetic end to end.
+
+**`solve.plan_cost_improvement` is emitted at zero** where the search found no
+cheaper plan, and the whole dollar set is emitted **not at all** where either
+endpoint is unpriced. Both or neither: a difference needs two real numbers, and
+inventing the other end is exactly what the amendment forbids.
+
 ### 4.6 Artifact
 
 Registered inputs and outputs: reference, hash, producing/consuming run. Artifact lineage links (this run consumed artifacts of runs X, Y) plus stable entity keys give cross-run identity — the run lineage graph — for free.

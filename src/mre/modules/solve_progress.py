@@ -126,6 +126,31 @@ CLAUSE_3_LABEL = (
     "to the finished plan and is not differenced against an earlier one."
 )
 
+#: R-SP1 AMENDMENT 1 — the SAME clause, on a trail whose endpoints are priced.
+#:
+#: A separate string rather than a conditional clause, because the two say
+#: genuinely different things and a reader must be able to tell which regime
+#: they are in. Here the two dollar figures ARE real ledger costs — that is what
+#: the amendment admits — while the per-incumbent table below is still the
+#: scaled objective and still may not wear a dollar sign. The sentence names
+#: that boundary explicitly, because it is the one thing a reader could
+#: reasonably get wrong when both measures are on one screen.
+CLAUSE_3_LABEL_PRICED = (
+    "Both dollar figures above are real ledger costs: the solver's first "
+    "workable plan was priced by the same extractor that priced the finished "
+    "plan, so their difference is ledger arithmetic end to end. The trail below "
+    "is a different measure — the solver's own internal cost score, not "
+    "dollars — and the two are never mixed."
+)
+
+#: The amendment's wall-cost disclosure, used only where it applies.
+CAPTURE_NOTE_WALL = (
+    "Capturing the first plan costs a moment of real time, and this solve was "
+    "stopped by the wall clock rather than by its search budget — so the plan "
+    "it finished on may differ slightly from an uncaptured run of the same "
+    "search. Under a search budget there is no such effect."
+)
+
 
 def summarize(trail: list[dict]) -> dict:
     """The scalars a trail implies. Pure, and the ONE definition of them.
@@ -149,6 +174,34 @@ def summarize(trail: list[dict]) -> dict:
             "flat": len(trail) == 1}
 
 
+#: Metric names for the DOLLAR story (R-SP1 AMENDMENT 1). Deliberately distinct
+#: from the objective-space set above, which STAYS as labelled solver telemetry:
+#: two measures, two names, and no reader has to guess which one a number is.
+METRIC_FIRST_COST = "solve.first_plan_cost"
+METRIC_FINAL_COST = "solve.final_plan_cost"
+METRIC_COST_IMPROVEMENT = "solve.plan_cost_improvement"
+#: The unit that IS currency, named as plainly as `objective_units` is.
+COST_UNIT = "currency"
+
+
+def price_summary(first_cost, final_cost) -> dict:
+    """The DOLLAR scalars, or an unpriced verdict. Pure, one definition.
+
+    ``priced`` is the amendment's admissibility test rendered as a boolean: BOTH
+    endpoints must be ledger-priced placements. One of the two missing is not a
+    partial story, it is no story — a difference needs two real numbers, and
+    inventing the other end is exactly what the amendment forbids.
+    """
+    if first_cost is None or final_cost is None:
+        return {"priced": False, "first_plan_cost": None, "final_plan_cost": None,
+                "dollar_improvement_abs": None, "dollar_improvement_pct": None}
+    first, final = round(float(first_cost), 2), round(float(final_cost), 2)
+    abs_imp = round(first - final, 2)
+    pct = (abs_imp / abs(first) * 100.0) if abs(first) > 1e-9 else None
+    return {"priced": True, "first_plan_cost": first, "final_plan_cost": final,
+            "dollar_improvement_abs": abs_imp, "dollar_improvement_pct": pct}
+
+
 def headline(summary: dict) -> str:
     """The authored story sentence for a trail, in ONE place.
 
@@ -165,6 +218,30 @@ def headline(summary: dict) -> str:
     if not n:
         return ("The solver found no workable plan for this window, so there is "
                 "no search history to show.")
+    # R-SP1 AMENDMENT 1 — DOLLARS WHEN BOTH ENDPOINTS ARE LEDGER-PRICED, and
+    # only then. This branch states two real costs and their real difference;
+    # every other branch below states the objective-space percentage exactly as
+    # clause (3) has always required. Three generations of trail, each honest,
+    # and the sentence never straddles them.
+    if summary.get("priced"):
+        fc = summary["first_plan_cost"]
+        lc = summary["final_plan_cost"]
+        if summary.get("flat"):
+            return (f"The solver found one workable plan, costing ${lc:,.2f}, "
+                    f"and did not improve on it within its budget.")
+        d = summary["dollar_improvement_abs"]
+        dp = summary.get("dollar_improvement_pct")
+        if d <= 0:
+            # Priced, more than one incumbent, and no cheaper ledger: the search
+            # improved its own score without improving the bill. Said plainly
+            # rather than rounded into a $0 saving nobody can act on.
+            return (f"The solver's first workable plan would have cost "
+                    f"${fc:,.2f}, and the plan it finished on costs ${lc:,.2f} "
+                    f"— its later plans scored better on its own measure "
+                    f"without costing less.")
+        tail = f" — {dp:.1f}% less" if dp is not None else ""
+        return (f"The solver's first workable plan would have cost ${fc:,.2f}; "
+                f"the plan it finished on costs ${lc:,.2f}{tail}.")
     first, final = summary.get("first"), summary.get("final")
     if summary.get("flat"):
         return (f"The solver found one workable plan, scoring {first:,.0f} on "
@@ -183,6 +260,9 @@ def progress_block_fields(
     best_bound: Optional[float],
     gap: Optional[float],
     window_key: Optional[str] = None,
+    first_plan_cost: Optional[float] = None,
+    final_plan_cost: Optional[float] = None,
+    wall_truncated: bool = False,
 ) -> dict:
     """The ``SolveProgressBlock``'s content, composed ONCE.
 
@@ -192,7 +272,8 @@ def progress_block_fields(
     block that can say two things. Only the SOURCE differs; the content comes
     from here.
     """
-    s = summarize(trail)
+    s = dict(summarize(trail))
+    s.update(price_summary(first_plan_cost, final_plan_cost))
     return {
         "stage": TRAIL_STAGE,
         "window_key": window_key,
@@ -212,7 +293,20 @@ def progress_block_fields(
         "objective_unit": OBJECTIVE_UNIT,
         "headline": headline(s),
         "clause_2_label": CLAUSE_2_LABEL,
-        "clause_3_label": CLAUSE_3_LABEL,
+        # The priced regime says something different and says so — see
+        # CLAUSE_3_LABEL_PRICED for why this is a second string, not a branch.
+        "clause_3_label": (CLAUSE_3_LABEL_PRICED if s["priced"]
+                           else CLAUSE_3_LABEL),
+        "priced": s["priced"],
+        "first_plan_cost": s["first_plan_cost"],
+        "final_plan_cost": s["final_plan_cost"],
+        "dollar_improvement_abs": s["dollar_improvement_abs"],
+        "dollar_improvement_pct": s["dollar_improvement_pct"],
+        # The amendment's wall-cost disclosure, present ONLY where it applies:
+        # capture costs wall time, and only a wall-stopped solve can have had
+        # its outcome touched by that. Empty under a deterministic budget.
+        "capture_note": (CAPTURE_NOTE_WALL
+                         if (s["priced"] and wall_truncated) else ""),
     }
 
 
@@ -226,6 +320,8 @@ def emit_solve_progress(
     det_consumed: Optional[float] = None,
     det_budget: Optional[float] = None,
     window_key: Optional[str] = None,
+    first_plan_cost: Optional[float] = None,
+    final_plan_cost: Optional[float] = None,
     subjects: Optional[list[EntityRef]] = None,
 ) -> dict[str, Any]:
     """Write the solve-progress trail into the evidence store.
@@ -279,6 +375,31 @@ def emit_solve_progress(
         message=f"{s['count']} improving solution(s) found",
     )
 
+    # R-SP1 AMENDMENT 1 — THE DOLLAR ROLLUP, beside the objective-space one and
+    # never instead of it. Same mechanism as W2.1's (docs/02 §4.4): the first
+    # plan's COST decomposes into the final plan's cost plus what the search took
+    # off it, exactly, and the consolidator verifies it — so "improvement" cannot
+    # become a difference against anything the solver did not itself produce and
+    # still decompose. Emitted at zero: a one-plan search has a true $0.00 story.
+    price = price_summary(first_plan_cost, final_plan_cost)
+    if price["priced"]:
+        fin = reporter.record_metric(
+            name=METRIC_FINAL_COST, value=price["final_plan_cost"],
+            unit=COST_UNIT, subjects=subjects or [], tier=RecordTier.SUPPORTING,
+            message="ledger cost of the plan this solve finished on")
+        imp = reporter.record_metric(
+            name=METRIC_COST_IMPROVEMENT, value=price["dollar_improvement_abs"],
+            unit=COST_UNIT, subjects=subjects or [], tier=RecordTier.SUPPORTING,
+            message=("what the search took off the ledger cost of its OWN first "
+                     "workable plan; 0.00 means it found no cheaper plan"))
+        reporter.record_metric(
+            name=METRIC_FIRST_COST, value=price["first_plan_cost"],
+            unit=COST_UNIT, subjects=subjects or [],
+            rollup_of=[fin.record_id, imp.record_id],
+            tier=RecordTier.SUPPORTING,
+            message=("ledger cost of the FIRST workable plan the solver found, "
+                     "priced by the same extractor that priced the final plan"))
+
     payload = {
         "stage": TRAIL_STAGE,
         "window_key": window_key,
@@ -289,6 +410,8 @@ def emit_solve_progress(
         "det_consumed": det_consumed,
         "det_budget": det_budget,
         "objective_unit": OBJECTIVE_UNIT,
+        "cost_unit": COST_UNIT,
+        **price,
         # The provenance CLASS and the source, named ON the record so it is
         # walkable rather than asserted (S-02's `grade_provenance`, same shape).
         # `derived` and not `observed`: these are CP-SAT's own readings of its
