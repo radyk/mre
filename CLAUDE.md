@@ -200,9 +200,10 @@ kept offering to follow it.
 **Last closed: Session W2.3 — the third-generation demo world**, 2026-08-06
 (docs/07 §5a.237-242; docs/04 2026-08-06; **no ruling, no contract change,
 prompts unchanged v19 / v9**; narrative `docs/closeouts/w2-gen3-demo-world.md`).
-**THE `--runslow` LADDER IS 14 RED AT HEAD** — found by running it; every
-recorded baseline shows `305 skipped`. Causes and the standing rule it proves
-are in docs/07 §5a.240.
+**THE `--runslow` LADDER IS 6 RED**, down from 14 (maintenance errand
+2026-08-06, R-SP1 AMENDMENT 2; `docs/closeouts/maint-runslow-ladder.md`). The
+six are AI-layer/sandbox product findings, each NAMED and ROUTED in docs/07 §5b
+— **none is live-LLM**, which was the reported class and was wrong.
 
 **THE SESSION LEDGER IS NOT IN THIS FILE.** What a session built, what it
 measured, its test counts and its commit live in `docs/07` §5a (position and
@@ -444,6 +445,10 @@ measurements. Do not restate a ruling's reasoning here.
   bypass is `git commit --no-verify` and nothing else.
 - **An empty denominator is not a clean bill.** A check that fires 0 of 0 says
   the corpus could not exercise it (4A-(d.3) §5a.212).
+- **A SUITE RESULT NAMES THE LADDER IT RAN** — both ladders, or say which one
+  (docs/04 2026-08-06; origin W2.3 §3, 14 red behind "skipped" for six sessions).
+- **A RESTORE WRITES THE CAPTURED BYTES BACK**, sha256-verified —
+  `git checkout --` is not byte-identical under autocrlf (docs/04 2026-08-06).
 - **A predicate is audited by the NEXT session, over the BUILDING session's own
   artifacts** — a session that has just built a check is the worst-placed
   observer of what it misses (4A-(e2) §9; 4A-(d.2) §5a.204 found a third missing

@@ -20754,3 +20754,159 @@ non-existent field returned a false zero of 695). This is 4x's *160 planner
 nudges refused, 160 of 160* arriving through a second, independent door on the
 same world. The product invents nothing; the consequence is that a demo of the
 ghost surface needs a different board than a demo of the dollar story.
+
+---
+
+## 2026-08-06 — THE `--runslow` LADDER, REPAIRED (a maintenance errand)
+
+Cross-room maintenance out of W2.3 §3, run before R4 opens onto the instrument.
+W2.3 found the full ladder **3239 passed / 21 skipped / 14 failed** and routed
+it; this errand re-measured **3240 / 21 / 14** at HEAD `571d917` (the +1 pass is
+W2.3's own follow-up commit, not drift) and closed the classes. Narrative and
+the class table: `docs/closeouts/maint-runslow-ladder.md`. **No ruling, no
+contract change, prompts unchanged v19 / v9.** `CONTRACT_VERSION` untouched at
+**1.17**.
+
+### Two standing rules, both born here
+
+**(1) A SUITE RESULT NAMES THE LADDER IT RAN.** "N passed" with no statement of
+whether `--runslow` was set is not a baseline for this tree; a close-out states
+both ladders or says which one it measured. **Origin: W2.3 §3** — 284 tests that
+every recorded baseline had skipped for six sessions came alive when the flag
+was finally set, and **14 of them were red the whole time**, behind six clean
+close-outs that each said "305 skipped" and meant it.
+
+**(2) A RESTORE WRITES THE CAPTURED BYTES BACK.** `git checkout --` is not a
+byte-identical restore under `core.autocrlf`; a negative-control step captures
+the target's bytes **before** injection and writes those bytes back after,
+verified by sha256. **Origin: W2.3 §0(3)** — the newline lesson's fourth site,
+and the first one found *inside the restore step itself*, i.e. inside the
+mechanism the other three were fixed with. Exercised here: capture
+`bf1b7e30a4e72389158c7a25fab2e61292a1503b66c1bdfdc80086259c804009`, inject,
+prove red, restore, **same digest**.
+
+### R-SP1 AMENDMENT 2 — byte-identity names its wall facts
+
+**Adjudicating the contradiction W2.3 routed to R4 as a ruling question.**
+R-SP1 clause (6) says the trail's `elapsed_s` are RECORDED WALL FACTS that vary
+run to run and are never asserted by a test.
+`test_document_is_byte_identical_with_the_store_on_and_off` asserted the WHOLE
+serialized document, so from the moment the document began carrying a search
+history the two could not both hold. **Clause (6) wins**, for the reason that
+decided it: whole-document byte identity stopped being the right instrument the
+day the document started recording facts about the wall, and the *claim* the
+test exists to make — that the prediction store is a side-channel — was never a
+claim about elapsed time.
+
+So the test normalizes an **EXPLICIT, NAMED, SHORT LIST** of wall-fact fields
+and asserts byte identity on **everything else**. The list lives in one place
+(`WALL_FACT_FIELDS`, `tests/test_coarse_history_wiring.py`), each member carries
+its one-line justification, and **anything not on it is asserted identical** —
+every placement, every ledger figure, every provenance string. Two members:
+`wall_time_s` (the solver's own reading, shared by `SolverBlock`,
+`PortfolioBlock` and `PortfolioMemberBlock`) and `elapsed_s` (`IncumbentBlock`,
+the field it actually failed on).
+
+**The widening is itself guarded**, because widening a normalizer is how a
+byte-identity test quietly stops testing:
+`test_the_normalization_still_catches_a_moved_placement` asserts both
+directions on synthetic documents with no solve — wall facts alone move and the
+comparison is EQUAL; a placement or a ledger total moves and it is UNEQUAL. It
+also pins the hit set to exactly the named list, so a normalizer that grew
+teeth-first would fail rather than pass quietly. Proven red by injection.
+
+**A CORRECTION TRAVELS WITH THE AMENDMENT.** The test's docstring claimed its
+teeth were R-SP1's *callback* non-perturbation ("a callback that moved an
+operation still goes red"). They are not. The two runs differ only in whether
+`record_roll_history` is a no-op, and the trail callback is installed in
+**both** — so nothing in this test bears on the callback at all. Its subject is
+the prediction STORE. The docstring now says so, and names the limit: a real
+product-side divergence cannot be injected here, because `record_roll_history`
+is handed no placements; what is provable is that the comparison would SEE one.
+
+### The measured finding the classes turned up
+
+**THE WARM START'S PLACEMENT STABILITY IS AN ARTIFACT OF THE PARALLEL SEARCH.**
+`test_scenario_untouched_moves_bounded` asserted `moves <= 3` under a fixture
+solving on a 30s wall with **no pinned workers and no pinned seed** — a fixture
+the hard rules already call irreproducible, and the standing parallel-load flake
+class's seventh member. Pinning it to deterministic law (and recording the
+pinning in the M6 run-context, which is what makes `derive_base_context`
+propagate it to the scenario half — pinning the runner alone leaves the other
+half of the diff a lottery) made it **stably red at 43**, not green:
+
+| configuration | base status | untouched moves |
+| --- | --- | --- |
+| unpinned (as it ran) | OPTIMAL | **0** — irreproducible |
+| workers=8 seed=0 | OPTIMAL | 4 |
+| workers=1 seed=0 | OPTIMAL | **43** |
+| workers=1 seed=42 | OPTIMAL | **43** — seed-insensitive |
+
+Every cell is OPTIMAL and cost-equal, so these are TIED-COST reshuffles, not a
+worse plan. And the warm start is not what was buying the bound: under
+workers=1, `warm_start=True/False` measures **43 / 57** at seed 0 and **43 / 33**
+at seed 7 — **cold is sometimes fewer**. The property does not survive the
+pinning the hard rules require.
+
+**The threshold was NOT raised to 43.** That would manufacture a claim out of a
+measurement — this file's own standing lesson. The test is marked
+`xfail(strict=True)` carrying the table above as its reason, so it cannot pass
+quietly if single-worker hint-following is ever fixed; it fails and forces the
+marker off. Routed to R4. The companion guard
+`test_warm_start_still_departs_hint_for_lower_cost` **passes under the same
+pinning** — the warm start still does not prevent the known lower-cost outcome.
+What is unproven is placement stability alone.
+
+### R-SC2's guard did not rot while its control slept
+
+The three stale signatures were all `reference_solve(det_time=)` /
+`build_rolling_view(det_time=)` — 4B.8's `det_time -> det_total` rename, at call
+sites that only run under `--runslow`. One is
+`test_relaxation_guard_negative_control_goes_red`, which W2.3 correctly flagged
+as **unable to execute**. Repaired and re-run, both halves hold: the guard is
+GREEN at HEAD on a real fine-feasible schedule (*mapped 87 ops, excluded 1
+unmodelable, **0 violations***) and its control DISCRIMINATES (*went red with
+**19 violations*** under the stubbed 20x capacity tightening). **A control that
+newly compiles is not yet a control that discriminates**; this one is both. The
+guard had not rotted — only its control had been blind.
+
+### The six were never live
+
+W2.3 named six failures "live-LLM" and said so as an explicit non-diagnosis.
+**The label was wrong, and that is the finding.** Re-run with `ANTHROPIC_API_KEY`
+blanked, all six fail **identically**; every one drives a `ScriptedParser` or an
+injected `_call_llm`, so no network call is reachable. **The live/product split
+the errand expected is 0 / 6, no `live` marker was introduced, and
+`pyproject.toml` is unchanged.** Six named dispositions, zero anonymous, all
+routed rather than fixed (docs/07 §5b). Two are product defects — an unanswered
+`split jobs` question, and **R-T2's correlation contract broken at one beat**:
+beat two derives the id from the RESOLVED pin (`price_drop`, sandbox.py:1309)
+while beat one derives it from the REQUEST (`feasibility_ghost`, sandbox.py:1463),
+so the two disagree whenever the resolved pin differs textually from what was
+asked for. Two are stale test copy whose ROUTE assertions still pass. One is a
+dependent of the first. One is an expectation predating R-OF1.
+
+**Consequence, stated rather than smoothed:** the ladder ends this errand at
+**6 failed, not 0**. The acceptance expected zero on the premise that the six
+were live tests that could honestly leave the default set behind a marker. The
+measurement falsified the premise, so there is nothing to mark, and fixing
+product defects is out of this errand's scope by its own terms. Six red, each
+named and owned, is the honest end state — and a strictly better instrument than
+fourteen anonymous ones behind "skipped".
+
+### The census, which is the reason this does not recur
+
+Four stale `== "1.14"` literals were the reported class. Fixing four seams is
+not fixing a class (this file's own rule), so the class was censused: **two more
+version literals sit in `--runslow`-only tests** (`test_api_endpoints.py`
+`test_sliced_solve_registers_a_rolling_document` and
+`test_served_document_is_rolling_with_interaction`), green today only because
+1.17 happens to be current and one bump from repeating this errand exactly. All
+six now read `CONTRACT_VERSION`. **Three literals were deliberately KEPT** and
+each is justified: `test_solve_progress_document::test_the_contract_version_names_this_block`
+and `test_schedule_document::test_versioned_from_day_one` are TRIPWIRES whose
+whole job is to fail on a bump and force a conscious review — and both run in
+the FAST ladder, so they cannot rot invisibly; and
+`test_a_pre_amendment_document_still_parses` constructs a 1.15 document on
+purpose, which is a migration test. The errand expected no such exception and
+found one.

@@ -21,7 +21,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mre.api.app import create_app
-from mre.contracts.schedule_document import ScheduleDocument
+from mre.contracts.schedule_document import CONTRACT_VERSION, ScheduleDocument
 from mre.modules.schedule_assembler import build_document_from_run
 from tools.generate_erp_dataset import generate
 
@@ -699,7 +699,10 @@ class TestRollingSolve:
 
         sid = run["result"]["schedule_id"]
         doc = _data(client.get(f"/schedules/{sid}"))
-        assert doc["contract_version"] == "1.17"
+        # the constant, not a literal: this assertion is --runslow-only, so a
+        # literal here rots invisibly exactly as four others did (the census in
+        # the 2026-08-06 maintenance errand). Green-today is not the test.
+        assert doc["contract_version"] == CONTRACT_VERSION
         assert doc["rolling"] is not None
         r = doc["rolling"]
         # the sliced world: committed + active bars, and a populated tray.
@@ -810,7 +813,7 @@ class TestRollingTwoBeatAPI:
 
     def test_served_document_is_rolling_with_interaction(self, rolling_api):
         doc = _data(rolling_api.client.get(f"/schedules/{rolling_api.schedule_id}"))
-        assert doc["contract_version"] == "1.17"
+        assert doc["contract_version"] == CONTRACT_VERSION   # constant, see above
         assert doc["rolling"] is not None
         assert doc["rolling"]["beyond_horizon"], "empty tray"
         # the split-endpoint interaction payload is served for the active window

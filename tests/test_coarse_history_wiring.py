@@ -179,17 +179,124 @@ def test_both_intake_paths_are_captured_through_the_worker(two_rolls):
 # (a) THE DOCUMENT IS UNTOUCHED
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# THE WALL-FACT LIST (maintenance errand, 2026-08-06 — R-SP1 AMENDMENT 2).
+#
+# Whole-document byte identity stopped being the right instrument the day the
+# document began RECORDING WALL FACTS. R-SP1 clause (6) says the solver's own
+# elapsed readings are recorded facts that vary run to run and are never
+# asserted by a test; this test asserted the whole document, so the two
+# collided and clause (6) wins.
+#
+# Every member below is a recorded wall reading and carries its reason. NOTHING
+# ELSE IS NORMALIZED — every other figure in the document is asserted identical,
+# which is the property this test exists to hold. Adding a member here is a
+# claim that the field is a wall fact, and it is reviewed as one.
+# ---------------------------------------------------------------------------
+WALL_FACT_FIELDS = {
+    # the solver's own reading of how long IT had been searching (SolverBlock)
+    "wall_time_s",
+    # per improving incumbent, the same reading at the moment it was found;
+    # this is the field the test actually failed on (IncumbentBlock, R-SP1 §6)
+    "elapsed_s",
+}
+# Absent at K=1 (this module pins portfolio_k=1), so they are named but never
+# expected to fire here. `PortfolioBlock.wall_time_s` and
+# `PortfolioMemberBlock.wall_time_s` are the SAME field NAME as SolverBlock's
+# and are covered by the entry above — recorded for the reader, not a fourth key.
+
+
+def _normalize_wall_facts(node, hits):
+    """Replace every WALL_FACT_FIELDS value, at any depth, with a sentinel.
+    `hits` accumulates the FIELD NAME of each value actually rewritten (one
+    entry per rewrite, not per distinct name), so a caller can assert the
+    normalizer HIT something — a normalizer whose denominator is empty proves
+    nothing (CLAUDE.md, the empty-denominator rule)."""
+    if isinstance(node, dict):
+        out = {}
+        for k, v in node.items():
+            if k in WALL_FACT_FIELDS:
+                hits.append(k)
+                out[k] = "<WALL>"
+            else:
+                out[k] = _normalize_wall_facts(v, hits)
+        return out
+    if isinstance(node, list):
+        return [_normalize_wall_facts(v, hits) for v in node]
+    return node
+
+
+def test_the_normalization_still_catches_a_moved_placement():
+    """THE ADJUDICATION'S OWN CONTROL, and the reason it is safe to normalize
+    anything at all.
+
+    Widening a normalizer is how a byte-identity test quietly stops testing. So
+    both directions are asserted here, on synthetic documents, with no solve:
+
+      * two documents differing ONLY in wall facts compare EQUAL — the
+        adjudication does what it claims;
+      * two documents differing in a PLACEMENT still compare UNEQUAL — the
+        teeth are intact, and a prediction store that leaked into what the
+        planner sees would still fail the test above.
+
+    This is a comparison-level control by necessity, and the limit is named:
+    the two runs above differ only in whether ``record_roll_history`` is a
+    no-op, and that function is handed no placements, so there is no product
+    seam at which a real divergence can be injected. What can be proven is that
+    the comparison would SEE one, which is what this does."""
+    base = {"solver": {"wall_time_s": 11.0, "status": "OPTIMAL",
+                       "progress": {"trail": [{"index": 1, "objective": 900.0,
+                                               "elapsed_s": 0.31}]}},
+            "placements": [{"op": "op-1", "resource": "M1",
+                            "start": "2026-01-05T08:00:00+00:00"}],
+            "cost_summary": {"total": 1234.56}}
+
+    def _norm(d):
+        hits: list[str] = []
+        return json.dumps(_normalize_wall_facts(d, hits), sort_keys=True), hits
+
+    # (1) wall facts alone move → EQUAL
+    moved_wall = json.loads(json.dumps(base))
+    moved_wall["solver"]["wall_time_s"] = 999.9
+    moved_wall["solver"]["progress"]["trail"][0]["elapsed_s"] = 88.8
+    a, a_hits = _norm(base)
+    b, _ = _norm(moved_wall)
+    assert a == b, "the named wall facts are not being normalized"
+    assert set(a_hits) == {"wall_time_s", "elapsed_s"}, (
+        f"the normalizer hit something other than the named list: {a_hits}")
+
+    # (2) a placement moves → UNEQUAL. This is the assertion that keeps the
+    # widened normalizer honest.
+    moved_op = json.loads(json.dumps(base))
+    moved_op["placements"][0]["start"] = "2026-01-05T09:00:00+00:00"
+    assert _norm(moved_op)[0] != a, (
+        "a MOVED PLACEMENT survived normalization — the byte-identity test has "
+        "lost its teeth and would no longer detect the store leaking")
+
+    # (3) and so does money, which is normalized by nothing
+    moved_cost = json.loads(json.dumps(base))
+    moved_cost["cost_summary"]["total"] = 1234.57
+    assert _norm(moved_cost)[0] != a, "a moved ledger survived normalization"
+
+
 @pytest.mark.slow
 def test_document_is_byte_identical_with_the_store_on_and_off(
         tmp_path_factory, submission_dir, monkeypatch):
     """Persistence is a SIDE-CHANNEL. Two rolling solves of the same submission
     at the same reference origin — one with the store wired, one with the whole
-    history call replaced by a no-op — must produce the SAME DOCUMENT BYTES.
+    history call replaced by a no-op — must produce the SAME DOCUMENT.
 
-    Exactly two fields are normalized before the comparison, and they are the
-    two the registry mints per run and cannot repeat: ``run_id`` and
-    ``schedule_id``. Nothing else is normalized, so any figure that moved would
-    fail this."""
+    Normalized before the comparison, and nothing else: the two identifiers the
+    registry mints per run and cannot repeat (``run_id``, ``schedule_id``), and
+    the named ``WALL_FACT_FIELDS`` above. Any other figure that moved fails
+    this — every placement and every ledger figure included, which is what the
+    test still has teeth FOR, and is asserted directly by
+    ``test_the_normalization_still_catches_a_moved_placement``.
+
+    The SUBJECT is the prediction STORE, not R-SP1's solve callback: the two
+    runs differ only in whether ``record_roll_history`` is a no-op, and the
+    trail callback is installed in BOTH. Nothing here proves the callback does
+    not perturb; that claim belongs to its own guard."""
     import mre.modules.coarse_predictions as cp
 
     def _run(root_name, store_on):
@@ -202,13 +309,21 @@ def test_document_is_byte_identical_with_the_store_on_and_off(
                           lambda **kw: cp.RollHistory())
             run = _solve(client, sub["submission_id"], ROLL_0)
         doc = _data(client.get(f"/schedules/{run['result']['schedule_id']}"))
-        raw = json.dumps(doc, sort_keys=True)
+        hits: list[str] = []
+        raw = json.dumps(_normalize_wall_facts(doc, hits), sort_keys=True)
         raw = raw.replace(run["id"], "<RUN>").replace(
             run["result"]["schedule_id"], "<SCHED>")
-        return raw, root
+        return raw, root, hits
 
-    on, on_root = _run("store_on", True)
-    off, off_root = _run("store_off", False)
+    on, on_root, on_hits = _run("store_on", True)
+    off, off_root, _ = _run("store_off", False)
+    # the normalizer must have had something to do, and it must have reached the
+    # trail — otherwise this test would pass for the wrong reason on a document
+    # that had quietly stopped carrying a search history at all.
+    assert "wall_time_s" in on_hits, "no solver wall reading was normalized"
+    assert "elapsed_s" in on_hits, (
+        "no incumbent elapsed reading was normalized — either the trail is "
+        "missing from the document or the field was renamed")
     assert on == off, (
         "the schedule document MOVED when the prediction store was enabled — "
         "persistence is leaking into what the planner sees")

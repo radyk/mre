@@ -40,6 +40,7 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
+from mre.contracts.schedule_document import CONTRACT_VERSION
 from mre.modules import portfolio as pf
 
 UTC = timezone.utc
@@ -330,7 +331,7 @@ def test_k_of_one_puts_no_portfolio_block_in_the_document(plant, direct):
                                     run_id="r", identity_map=idmap,
                                     portfolio=None)
     assert doc.solver.portfolio is None
-    assert doc.contract_version == "1.14"
+    assert doc.contract_version == CONTRACT_VERSION
 
     # AND the assembler's own guard, independently: handed a K=1 Portfolio
     # OBJECT it still emits nothing. Two things must both hold for clause (2) —

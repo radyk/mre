@@ -33,6 +33,7 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
+from mre.contracts.schedule_document import CONTRACT_VERSION
 from mre.modules.coarse_horizon import (
     BINDING_UTILIZATION, Bucket, CoarseCoefficients, build_buckets,
     build_coarse_zone, bucket_capacity_minutes, coarse_allocation_violations,
@@ -210,8 +211,12 @@ def test_relaxation_guard_fine_feasible_maps_to_coarse_feasible(plant):
     model to make its output look tidier."""
     from mre.modules.rolling_horizon import reference_solve
 
+    # `det_total`, not `det_time`: 4B.8 renamed `reference_solve`'s budget
+    # parameter and this call site was never updated, because it only ever runs
+    # under --runslow. `build_coarse_zone` below still takes `det_time` — the
+    # two names are different quantities, which is exactly why one moved.
     _led, _svc, _drv, _tot, placements = reference_solve(
-        plant, seed=42, deterministic=True, det_time=3.0)
+        plant, seed=42, deterministic=True, det_total=3.0)
     assert placements, "reference solve produced no placements"
 
     demand_ids = [d["id"] for d in plant.schedulable_demands]
@@ -242,7 +247,7 @@ def test_relaxation_guard_negative_control_goes_red(plant):
     from mre.modules.rolling_horizon import reference_solve
 
     _led, _svc, _drv, _tot, placements = reference_solve(
-        plant, seed=42, deterministic=True, det_time=3.0)
+        plant, seed=42, deterministic=True, det_total=3.0)
     demand_ids = [d["id"] for d in plant.schedulable_demands]
     buckets, g = _guard_inputs(plant, demand_ids)
     excluded = {u.op_id for u in g["unmodelable"]}
@@ -373,7 +378,7 @@ if not (out / "sub" / "manifest.json").exists():
 plant = prepare_plant(out / "sub", out / "prep", reference_date=REF)
 view = build_rolling_view(plant, window_days=7, frozen_days=2, gravity=True,
                           deterministic=True, seed=42, member_time_limit_s=8.0,
-                          det_time=1.0)
+                          det_total=1.0)
 z = build_coarse_zone(plant, view,
                       coefficients=CoarseCoefficients(7, 0.8, True, True),
                       deterministic=True, seed=42, det_time=2.0,
@@ -428,8 +433,12 @@ class TestCoarseDocument:
             plant=plant, view=view, schedule_id="sched-coarse", run_id="run-c",
             identity_map=identity_map, coarse_zone=zone)
 
-    def test_contract_is_1_9_and_the_zone_is_present(self, doc):
-        assert doc.contract_version == "1.14"
+    def test_contract_is_current_and_the_zone_is_present(self, doc):
+        # The name used to say "1_9" and the literal used to say "1.14" — two
+        # version claims written once and never re-read (the category-fusion
+        # class, CLAUDE.md). Both are gone: the assertion is that the assembler
+        # stamps the contract's OWN constant, which is what this test ever meant.
+        assert doc.contract_version == CONTRACT_VERSION
         assert doc.rolling is not None and doc.rolling.coarse_zone is not None
 
     def test_completeness_invariant_passes_unchanged(self, plant, view, doc):
