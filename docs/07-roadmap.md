@@ -8039,7 +8039,13 @@ warm-start hints tightly (43 untouched moves vs 4 at workers=8) while R-T2's
 local price claims "nothing else moved". Beat two PINS rather than HINTS, so the
 two may never collide — **but that is an inference from a code read, and this
 recon twice found such inferences wrong.** It needs its own measurement.
-**(e) THIS SESSION'S OWN FIRST INSTRUMENT WAS BLIND.** `p2_frame`'s ground-truth
+**(e) THE MOBILITY-FLOOR TIE IS AGGREGATE, NOT PER-BAR.** The brief asked that
+probe bars be chosen by the ask layer's own mobility verdict; they were chosen
+from the pool's own targets and 4x's `active_bars` order instead, so §5a.247's
+"the floor and the sandbox agree" is drawn at the level of the floor's aggregate
+(154 of 386) rather than a per-bar tie. Stated at that level; a per-bar
+instrument would be stronger and was not built.
+**(f) THIS SESSION'S OWN FIRST INSTRUMENT WAS BLIND.** `p2_frame`'s ground-truth
 reader read `calendar["windows"]`, a key that does not exist (the real one is
 `horizon_resolved`), returned **0 windows for every machine**, and produced a
 *0 false sentences* result from an empty denominator — the same shape as the

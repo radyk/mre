@@ -165,6 +165,19 @@ construction**. S3 is fully explainable statically, as the brief predicted — a
 All probes are committed under `tools/spikes/rolling_stack/`. Artifacts and
 exact invocations are named per trace.
 
+**One accommodation, named.** The brief asked that P1's bars be chosen using
+*the ask layer's own mobility verdict* — "one the floor says can move". They
+were not. Bars were taken from two other sources: the pool's own eight targets
+(independently confirmed 3-way eligible by `_eligible_refs`, §3.3) and document
+order for the nudge walks (4x's own `active_bars` selection, so the replay stays
+comparable to the specimen it reproduces). **What this costs is a
+cross-instrument tie**: §3.6 compares the floor's aggregate (154 of 386) against
+the sandbox's per-bar verdicts rather than asking the floor about the *same*
+bars. The conclusion there — that the floor and the sandbox agree and the pools
+are the outliers — is drawn at the level of the aggregate, and is stated at that
+level. A per-bar tie between the two would be a stronger instrument and is not
+what was built.
+
 ### 3.1 P1 — one candidate, walked (`p0_horizons.py`, `p1_no_cut_control.py`)
 
 Against the pinned gen-3 board `rolling-9fdee7aa-ec5` (read-only, in-process):
