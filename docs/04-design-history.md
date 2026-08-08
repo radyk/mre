@@ -20910,3 +20910,138 @@ the FAST ladder, so they cannot rot invisibly; and
 `test_a_pre_amendment_document_still_parses` constructs a 1.15 document on
 purpose, which is a migration test. The errand expected no such exception and
 found one.
+
+---
+
+## 2026-08-07 — Session R4.0 RECON: the rolling interaction stack (NO RULING)
+
+**A recon. No `src/` CODE file changed, no ruling, no contract change, prompts
+unchanged (parse v19 / synthesis v9). Both pinned worlds READ-ONLY.** The one
+tracked `src/` change is `corpus_index.json`, REGENERATED from this file and
+docs/07 by `tools/build_corpus_index.py`, as the currency hook requires. Close-out:
+`docs/closeouts/r4-rolling-stack-recon.md`. Probes: `tools/spikes/rolling_stack/`.
+Position and the fix-session routing: docs/07 §5a, §5b R4.
+
+Three preserved specimens were sent to this session — the empty ghost pool
+(W2.3 §6), the 160 refused nudges (4x), the monolithic accept child (4x §8(2)).
+The working hypothesis in the brief was that the first two share a root in the
+sandbox's feasibility semantics and the third is separate. **The measurement
+split it the other way.**
+
+### Two roots, one shared mechanism, one missing invariant
+
+**D1 — the incumbent rebuild is UNSCOPED.** `forced_alternatives._load_alt_context`
+and `solution_pool` rebuild the base model over the WHOLE snapshot, never over
+the plan of record. On the gen-3 demo board that is 695 operations where the
+rolling window-0 incumbent placed 386. The rebuilt model is INFEASIBLE **with no
+cut applied at all** (2.15s), so `infeasible_this_horizon` was never a statement
+about the alternative. Scoped to `plan_of_record_scope` it is FEASIBLE, and
+**all 8 of W2.3's "8 INFEASIBLE" members are real roads, each crossing to a
+different machine.** The horizon was never implicated: 0 of 280 demands are due
+past `horizon_end`, and stretching it does not rescue the model.
+
+**D3 — the accept mints a monolithic, uncalibrated, DATELESS child.** Both
+accept ceremonies (`app.py:1627`, `:1812`) assemble via
+`build_document_from_run` → `assemble_schedule_document`, the monolithic
+assembler, which has no `rolling`/`portfolio`/`calibration` parameter. Verified
+live at contract **1.17**, not a 1.15 artifact.
+
+**D3 is the carrier of the other two onto the nudge path.** 4x's ladder ran
+against the CHILD, not the parent (`replay_demo_lineage.py` walks
+`active_bars(doc2)`), 40 ops × 4 offsets = the reported 160. A child with no
+rolling block gets `restrict_op_ids=None` from `api._rolling_gesture_context`,
+so beat one rebuilds the whole plant — D1's mechanism through a second door.
+
+### The false sentence: the check and the sentence, separated
+
+**D4 — `reference_date` is unrecoverable from an accept child's run dir.**
+`scenario.derive_base_context` reads it only from an **M3** run context, and an
+accept run writes none. Without the floor, `SolverBuilder._compute_horizon` drags
+the origin back to the whole plant's earliest release:
+
+```
+horizon_start (M5 evidence)      2026-01-05
+var_map.horizon_start (builder)  2025-12-01      offset -50,400 min (35 days)
+var_map calendar windows   minutes 50,820 .. 94,740
+expressible pins           minutes      0 .. 44,640      DISJOINT
+```
+
+Every pin a planner can express falls before every calendar window in the
+model's frame, so `open_at` is always None and the sentence is *"the machine is
+not open at that time"* — always. **4x's exact specimen reproduced**: op
+`004733d3` on `fd34d391` at `2026-01-08T09:52` is `possible` on the correctly
+scoped parent and `impossible` with that sentence on the child.
+
+Three cells settle the check-vs-sentence question the 4x close-out left open:
+
+| cell | probes | impossible | FALSE sentences |
+| --- | --- | --- | --- |
+| parent, restricted (correct) | 32 | 7 | **0** |
+| child, unrestricted, ref LOST | 24 | 24 | **23** |
+| child, unrestricted, ref RESTORED | 16 | 16 | **0** (11 unattributed) |
+
+**The wrong CHECK is the lost scope; the false SENTENCE is the lost reference
+date; and `relaxed_refusal` is INNOCENT.** It reports truthfully about whatever
+model it is handed and returns None rather than guess when it cannot attribute —
+11 times in the third cell, exactly as its docstring promises. Against an
+independently computed calendar its verdicts matched **20 of 20** on both
+correctly-framed boards.
+
+**D5 — the frame is assumed, never asserted.** `pin_start_min` is minutes from
+the M5-evidence origin; `cal_windows` is minutes from the origin the builder
+derives for itself. Nothing anywhere asserts the two agree. D1 and D4 are two
+different ways of breaking an invariant no one checks.
+
+**D2 — `infeasible_this_horizon` fuses three states** (nothing to cut / proved
+closed / budget exhausted, `forced_alternatives.py:433-442`). Found by code read
+and named as LATENT: gen-3's eight members all recorded a genuine INFEASIBLE, so
+this is not what emptied that pool. It is a fourth instance of the ruled
+third-state species (`unreadable` 4B.18, `undetermined` 4B.23, `UNDECIDABLE`
+4A.x) and a vocabulary-class change when it is fixed.
+
+### THREE GUARDS, EACH PARTIALLY APPLIED — the discipline finding
+
+This is the entry a future session should read before touching any of it.
+
+* **The window restriction**: 7 of 9 post-solve rebuild sites. The two that do
+  not restrict are the two pool builders — the surfaces a planner touches to see
+  alternatives.
+* **The root-run walk** (which recovers the reference date): **2 of 11**
+  `derive_base_context` call sites, with the hazard *named in a comment* at one
+  of the two — `app.py:1582-1586`, "the 3.3b wall-clock trap". The nine
+  undefended sites include every sandbox seam.
+* **The frame invariant**: nowhere.
+
+Any one of the three, applied completely, would have prevented the whole of S1
+and S2. **And 4B.31 already diagnosed this class and wrote the correct general
+remedy down**: `plan_of_record_scope`'s docstring (`sandbox.py:452-471`) says
+*"a guarantee a caller can forget is not a guarantee"*, records that
+`_restrict_window` was wired to three of four Tier-2 surfaces for six sessions,
+and that the missed fourth "refused every accept on every rolling board ever
+minted". That census stopped at the accept. **The class was declared fixed with
+two members still open.** This is *a defect class fixed at one seam is not
+fixed*, at the site where the rule itself was written.
+
+### The predicate audit (the errand's own artifacts, by the next session)
+
+The maintenance errand's C3 normalization control **PASSES** at HEAD and its C5
+fixture **XFAILs** (strict) with its reason text intact; both of the errand's
+claims about them are true, including that C5 asserts the pinning recovery
+(`tests/test_scenario.py:374,377`).
+
+**The gap is at the same function.** C5's lesson was that `derive_base_context`
+recovers only what a run context recorded, and it fixed that for
+`solver_workers`/`solver_seed`. It did not census the rest. **`reference_date` is
+a second member of that class and was already broken in production when the
+fixture was written** — it is D4. Measured directly:
+`derive_base_context(child/runs)` returns exactly
+`{time_limit, solver_workers, solver_seed}` and no reference date.
+
+### An instrument lesson, on this session's own probe
+
+The first ground-truth reader written here read `calendar["windows"]` — a key
+that does not exist; the real one is `horizon_resolved` — and returned **0 open
+windows for every machine**, which made every refusal look correct and produced
+a *0 false sentences* result from an empty denominator. **The first number this
+recon produced was wrong, in the same shape as the defect it was pointed at.**
+Caught by (d.2)'s rule; the reader now RAISES rather than returning `[]`.

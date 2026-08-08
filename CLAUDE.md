@@ -197,9 +197,12 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session W2.3 — the third-generation demo world**, 2026-08-06
-(docs/07 §5a.237-242; docs/04 2026-08-06; **no ruling, no contract change,
-prompts unchanged v19 / v9**; narrative `docs/closeouts/w2-gen3-demo-world.md`).
+**Last closed: Session R4.0 — RECON: the rolling interaction stack**, 2026-08-07
+(docs/07 §5a.245-250 + §5b R4 item 0; docs/04 2026-08-07; **no ruling, no
+contract change, no `src/` CODE change, prompts unchanged v19 / v9**; narrative
+`docs/closeouts/r4-rolling-stack-recon.md`). **THE TWO POOL BUILDERS AND EVERY
+ACCEPT CHILD REBUILD THE WHOLE PLANT, NOT THE PLAN OF RECORD** (D1/D3) — five
+defects, two roots, three fix sessions ordered in §5b; nothing fixed.
 **THE `--runslow` LADDER IS 6 RED**, down from 14 (maintenance errand
 2026-08-06, R-SP1 AMENDMENT 2; `docs/closeouts/maint-runslow-ladder.md`). The
 six are AI-layer/sandbox product findings, each NAMED and ROUTED in docs/07 §5b
@@ -218,6 +221,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| R4.0 | recon: the rolling interaction stack | (none — recon) | `r4-rolling-stack-recon.md` |
 | W2.3 | the third-generation demo world | (none new) | `w2-gen3-demo-world.md` |
 | W2.2 | the dollar story + the three rollups | R-SP1 amd 1 | `w2-dollar-story-rollups.md` |
 | W2.1 | solve-progress ledger + summary screen | R-SP1 | `w2-solve-progress-summary-v1.md` |
@@ -457,7 +461,8 @@ measurements. Do not restate a ruling's reasoning here.
   (4A-(d.2) §5a.209), and a count whose numerator's SET is empty proves nothing.
 - **A defect class fixed at one seam is not fixed.** Census the class; the
   4B.14 chunk read, the 4B.20 duration class and the (e2) counterfactual sites
-  were each found this way.
+  were each found this way — and R4.0 found 4B.31's OWN scope census stopped two
+  seams early, leaving both pool builders unscoped (docs/07 §5a.248).
 - **A guard that supplies its own arguments proves the assembler, not the path**
   (4B.21 §5a.78). A guard pointed at one file guards one file (4B.25 §5a.105).
 - **A negative control that calls past the broken line proves nothing** (4B.28
@@ -536,6 +541,7 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
+| R4.0 | the what-if path shares the accept's monolithic assembler; C5-vs-R-T2's hold contract is named, NOT measured | §5a.250 · `r4-rolling-stack-recon.md` |
 | W2.2 | the bridge self-proof is only as strong as its specimen's feature coverage; the first-incumbent capture is unconditional on every solve | §5a.236 · `w2-dollar-story-rollups.md` |
 | S-02/S-03 | the board opener still returns `grade: None` though its record now exists; `certificate.md` is written but not registered | §5a.226 · `4x-certificate-contract.md` |
 | 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |
