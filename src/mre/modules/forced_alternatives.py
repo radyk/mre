@@ -292,6 +292,7 @@ class _AltContext:
 
 def _load_alt_context(out_dir: Path, snapshot_id: str, runs_subdir: str) -> _AltContext:
     from mre.modules.calendar_utils import flatten_all_calendars
+    from mre.modules.sandbox import _restrict_window, plan_of_record_scope
     from mre.modules.scenario import derive_base_context
     from mre.modules.schedule_assembler import _ORDER_REF_TYPES, _external_name
     from mre.modules.snapshot_store import SnapshotStore
@@ -311,6 +312,27 @@ def _load_alt_context(out_dir: Path, snapshot_id: str, runs_subdir: str) -> _Alt
     incumbent_assignments = list(reader.iter_entities("assignment"))
     identity_map = reader.read_identity_map()
     cost_model = costmodels[0] if costmodels else {}
+
+    # R-SG1 clause (1), Session R4.1 — THE REBUILD SCOPES ITSELF.
+    # Build over exactly the operations the published plan PLACES, so the
+    # incumbent is a feasible assignment of this model BY CONSTRUCTION and a
+    # member can only ever be infeasible because of the CUT.
+    #
+    # Before this, the ghost pool compiled the WHOLE SNAPSHOT against the
+    # window's horizon. On the gen-3 demo board that is 695 operations carried
+    # into a model whose incumbent only ever placed 386, and R4.0 measured the
+    # consequence directly: the rebuild was INFEASIBLE **with no cut applied at
+    # all** (2.15s), so every "infeasible_this_horizon" verdict the pool
+    # published was a statement about a model of a plant that does not exist,
+    # not about the alternative. Correctly scoped, 8 of 8 of this pool's own
+    # targets came back FEASIBLE.
+    #
+    # The scope is DERIVED here, not passed in: a guarantee a caller can forget
+    # is not a guarantee (4B.31, whose own census stopped two seams short of
+    # this one).
+    restrict_op_ids = plan_of_record_scope(incumbent_assignments)
+    ops, wps, fuls, demands = _restrict_window(
+        ops, wps, fuls, demands, restrict_op_ids)
 
     evidence = _read_evidence(out_dir / runs_subdir)
     ctx = derive_base_context(out_dir / runs_subdir)
@@ -370,6 +392,7 @@ def _solve_alternative(
     """
     from mre.contracts.schedule_document import PoolBlock
     from mre.contracts.vocabularies import ModuleCode, RunStatus
+    from mre.modules import standing_pins as sp_mod
     from mre.modules.extractor import Extractor
     from mre.modules.schedule_assembler import assemble_schedule_document
     from mre.modules.solve_runner import SolveRunner
@@ -400,6 +423,14 @@ def _solve_alternative(
         actx.cost_model,
     )
     b_rep.end(RunStatus.SUCCESS)
+    # R-SG1 (2), as a FLOOR rather than a fix: this site does not currently
+    # cross frames — its cut is a pure assignment literal and its warm-start
+    # hints re-derive their minutes inside the builder — so the assertion has
+    # nothing to catch today. It is here so that the day someone adds minute
+    # arithmetic to a ghost, the model says so instead of the planner finding
+    # out from a wrong verdict.
+    sp_mod.assert_frame(var_map, actx.horizon_start,
+                        site="forced alternative member")
 
     apply_solution_hints(model, var_map, actx.incumbent_assignments)
     if required_resource is not None:

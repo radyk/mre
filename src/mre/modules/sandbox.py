@@ -391,14 +391,53 @@ class FeasibilityGhost:
         return asdict(self)
 
 
+def _canonical_instant(raw) -> str:
+    """ONE spelling per instant: UTC, ``datetime.isoformat()``.
+
+    An unparseable value is hashed as it came rather than dropped — it still
+    distinguishes gestures, and inventing an instant for it would be worse than
+    hashing the raw text. (``_parse_dt`` RAISES on a non-ISO string rather than
+    returning None, so this catches; before R4.1 the raw text was hashed with
+    no parse at all and no caller could make this function throw. Correlating
+    two beats is not the place to start.)"""
+    try:
+        dt = _parse_dt(raw)
+    except (ValueError, TypeError):
+        return str(raw)
+    if dt is None:
+        return str(raw)
+    return dt.astimezone(timezone.utc).isoformat()
+
+
 def correlation_id_for(snapshot_id: str, pin_op_id: str,
                        pin_resource_id: Optional[str],
                        pin_start_iso: Optional[str]) -> str:
     """The deterministic id linking beat one to beat two for one gesture. Derived
     purely from the pin (+ snapshot), so both beats compute the SAME id with no
     server state — the client passes beat one's id into beat two and the two are
-    provably the same gesture."""
-    raw = f"{snapshot_id}|{pin_op_id}|{pin_resource_id}|{pin_start_iso}"
+    provably the same gesture.
+
+    R4.1 (R-T2, the maintenance errand's C4 item 5): the instant is
+    CANONICALIZED before hashing, and that is what makes the sentence above
+    true again.
+
+    THE READING. R-T2 makes this id name a GESTURE — the (snapshot, operation,
+    resource, instant) a planner actually made. Beat two's own comment already
+    settles WHICH object both beats must key on: the pricer RESOLVES an omitted
+    pin, so the id must be derived from what was actually priced, or a
+    defaulted gesture gets two ids. Both beats already did that. What they
+    could not agree on was the SPELLING. Beat one round-trips the start through
+    ``datetime`` and emits ``2026-01-12T17:33:00+00:00``; beat two passes the
+    document's own string through verbatim, ``2026-01-12T17:33:00Z``. Same
+    instant, two strings, two ids — and the two-beat contract silently broken
+    for every gesture whose start came off the board, which is every gesture a
+    planner makes by dragging a bar.
+
+    An instant is a point in time, not a spelling. So the normalization lives
+    HERE, in the one function both beats call: it is the only place that can
+    make the two unable to disagree, which is what the fix intent asked for."""
+    raw = (f"{snapshot_id}|{pin_op_id}|{pin_resource_id}"
+           f"|{_canonical_instant(pin_start_iso)}")
     return "corr-" + hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
@@ -662,6 +701,10 @@ def _baseline_window_solve_uncached(
             fuls + demands, constraints, cost_model,
         )
         b_rep.end(RunStatus.SUCCESS)
+        # R-SG1 (2): the standing pins below are minutes from the EVIDENCE
+        # origin; cal_windows are minutes from the BUILDER's. Assert they are
+        # the same instant before either is used.
+        sp.assert_frame(var_map, horizon_start, site="sandbox baseline")
 
         apply_solution_hints(model, var_map, incumbent_assignments)
         # Every standing commitment is held, in full — there is no dragged op to
@@ -1128,6 +1171,7 @@ def materialize_audit_offer(
         wps + ops + edges, resources + pools, flattened,
         fuls + demands, constraints, cost_model)
     b_rep.end(RunStatus.SUCCESS)
+    sp.assert_frame(var_map, horizon_start, site="audit offer")
 
     apply_solution_hints(model, var_map, incumbent_assignments)
     sp.apply_standing_pins(model, var_map, standing_pins, horizon_start)
@@ -1476,6 +1520,14 @@ def feasibility_ghost(
         fuls + demands, constraints, cost_model,
     )
     b_rep.end(RunStatus.SUCCESS)
+    # R-SG1 (2) — THE SITE THE FALSE SENTENCE CAME THROUGH. ``pin_start_min``
+    # above is minutes from the EVIDENCE origin; every ``cal_windows`` bound
+    # ``relaxed_refusal`` reads is minutes from the BUILDER's. When those two
+    # instants differed by 35 days on an accept-derived child, every pin a
+    # planner could express landed before the first window in the model's frame
+    # and this gesture answered "the machine is not open at that time" about
+    # machines that were open. It now refuses to answer at all.
+    sp.assert_frame(var_map, horizon_start, site="sandbox beat one")
 
     apply_solution_hints(model, var_map, incumbent_assignments)
     # RELAXATION: pin ONLY the dragged op — NOT the lineage's standing/committed
@@ -1723,6 +1775,7 @@ def sandbox_pin_resolve(
         fuls + demands, constraints, cost_model,
     )
     b_rep.end(RunStatus.SUCCESS)
+    sp.assert_frame(var_map, horizon_start, site="sandbox pin re-solve")
 
     # warm-start from the incumbent, then pin the target (machine + time), R-DP1.
     apply_solution_hints(model, var_map, incumbent_assignments)

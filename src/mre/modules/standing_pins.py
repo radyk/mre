@@ -213,3 +213,83 @@ def _parse_dt(raw) -> Optional[datetime]:
     dt = raw if isinstance(raw, datetime) else datetime.fromisoformat(
         str(raw).replace("Z", "+00:00"))
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+# ---------------------------------------------------------------------------
+# THE FRAME INVARIANT (R-SG1 clause 2, Session R4.1)
+# ---------------------------------------------------------------------------
+
+
+class FrameMismatch(Exception):
+    """The minute grid a pin is expressed in is NOT the grid the model was
+    built in (R-SG1 clause 2).
+
+    Every offset in this module — and every ``cal_windows`` bound the refusal
+    sentences are derived from — is an integer count of minutes from *an*
+    origin. There are two origins in this product, and until R4.1 nothing
+    asserted they were the same one:
+
+    * the **evidence** origin, ``_m5_horizon(evidence)[0]`` — the horizon the
+      base run RECORDED, which is what every caller measures a planner's pin
+      against; and
+    * the **builder** origin, ``var_map.horizon_start`` — which
+      :class:`~mre.modules.solver_builder.SolverBuilder` recomputes from the
+      entities it is handed, floored at ``reference_date``.
+
+    On a base run they agree. On an accept-derived child the reference date is
+    unrecoverable (R4.0 D4), so the builder's floor drops to the earliest
+    release in the whole plant: measured **35 days = 50,400 minutes** apart.
+    Every pin a planner could express then landed strictly before the first
+    calendar window in the model's frame, and beat one answered "the machine is
+    not open at that time" — every time, for every operation, at every instant,
+    about machines that were open all along.
+
+    Note what that failure was NOT: it was not a wrong sentence. The refusal
+    logic reported truthfully about the model it was handed, and returned None
+    rather than guess when it could not attribute a refusal. The lie was told
+    one gesture earlier, by whoever built a model in a frame nobody checked.
+    That is why this is an exception and not a warning — a mis-framed model may
+    not render a verdict about the plant at all.
+    """
+
+    def __init__(self, site: str, evidence_origin, builder_origin) -> None:
+        self.site = site
+        self.evidence_origin = evidence_origin
+        self.builder_origin = builder_origin
+        if evidence_origin is None or builder_origin is None:
+            # No offset exists between a known instant and an unknown one.
+            # Reporting 0 here would be a default that ASSERTS (4B.23).
+            self.offset_minutes = None
+            detail = "one of the two origins is unreadable"
+        else:
+            self.offset_minutes = int(
+                (builder_origin - evidence_origin).total_seconds() // 60)
+            detail = f"offset {self.offset_minutes:+d} minutes"
+        super().__init__(
+            f"frame mismatch at {site}: the model was built from origin "
+            f"{builder_origin!s}, but the pin arithmetic is measured from "
+            f"{evidence_origin!s} ({detail}). Nothing is decided from a "
+            f"mis-framed model (R-SG1)."
+        )
+
+
+def assert_frame(var_map, horizon_start, *, site: str) -> None:
+    """Assert that ``var_map`` was built in the same frame ``horizon_start``
+    measures from. Returns None on agreement; raises :class:`FrameMismatch`.
+
+    Called at every rebuild site that must honour an origin the evidence fixed.
+    It is ONE function rather than a check re-implemented per site, because the
+    defect being fixed is precisely that each site did its own minute
+    arithmetic against somebody else's origin.
+
+    There is deliberately **no tolerance**: the grid is integer minutes and a
+    pin binds on it exactly, so a "small" offset is not a rounding question —
+    it is every pin misplaced by that much. An absent origin on either side
+    does not pass either: an unreadable frame fails SAFE and says nothing about
+    the plant.
+    """
+    builder_origin = getattr(var_map, "horizon_start", None)
+    if (builder_origin is None or horizon_start is None
+            or builder_origin != horizon_start):
+        raise FrameMismatch(site, horizon_start, builder_origin)
+    return None

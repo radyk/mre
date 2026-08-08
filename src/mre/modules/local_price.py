@@ -192,6 +192,7 @@ class _HeldWorld:
 def _load_held_world(out_dir: Path, snapshot_id: str, runs_subdir: str,
                      restrict_op_ids: Optional[set]) -> _HeldWorld:
     from mre.contracts.vocabularies import ModuleCode, RunStatus
+    from mre.modules import standing_pins as sp
     from mre.modules.calendar_utils import flatten_all_calendars
     from mre.modules.scenario import derive_base_context
     from mre.modules.snapshot_store import SnapshotStore
@@ -235,6 +236,10 @@ def _load_held_world(out_dir: Path, snapshot_id: str, runs_subdir: str,
     model, var_map = SolverBuilder(reference_date=reference_date).build(
         *build_args[1:])
     b_rep.end(RunStatus.SUCCESS)
+    # R-SG1 (2): every placement minute recorded on this world below — and so
+    # every span ``relaxed_refusal`` compares a pin against — is measured from
+    # the EVIDENCE origin. Assert the model agrees before the world is built.
+    sp.assert_frame(var_map, horizon_start, site="local price held world")
 
     keep = {o["id"] for o in ops}
     placements: dict = {}
@@ -594,6 +599,11 @@ def validate_held_world(world: _HeldWorld, placements: dict,
         rebuilt = True
         model, var_map = SolverBuilder(
             reference_date=world.build_args[0]).build(*world.build_args[1:])
+        # R-SG1 (2): a FRESH model, pinned below with minutes this world
+        # measured from the evidence origin. A rebuild is exactly where a
+        # frame can drift without anyone noticing.
+        sp.assert_frame(var_map, world.horizon_start,
+                        site="local price validation rebuild")
     else:
         model, var_map = world.model, world.var_map
         world.model_consumed = True

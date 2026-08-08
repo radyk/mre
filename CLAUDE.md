@@ -197,7 +197,13 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session R4.0 — RECON: the rolling interaction stack**, 2026-08-07
+**Last closed: Session R4.1 — the scope guard and the frame invariant**,
+2026-08-08 (docs/07 §5a.251-257; docs/04 2026-08-08; **R-SG1**; no contract
+change, prompts unchanged; `docs/closeouts/r4-1-scope-frame.md`). **BOTH POOL
+BUILDERS SCOPE THEMSELVES; EIGHT CROSSINGS ASSERT THEIR FRAME. THE GEN-3 RE-POOL
+STOP WAS TAKEN — the pinned world was NOT written to. D2 IS NOW LIVE, NOT
+LATENT** — it and the ghost delta's denominator are routed to R4.3.
+Previously: Session R4.0 — RECON: the rolling interaction stack, 2026-08-07
 (docs/07 §5a.245-250 + §5b R4 item 0; docs/04 2026-08-07; **no ruling, no
 contract change, no `src/` CODE change, prompts unchanged v19 / v9**; narrative
 `docs/closeouts/r4-rolling-stack-recon.md`). **THE TWO POOL BUILDERS AND EVERY
@@ -221,6 +227,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| R4.1 | the scope guard and the frame invariant | R-SG1 | `r4-1-scope-frame.md` |
 | R4.0 | recon: the rolling interaction stack | (none — recon) | `r4-rolling-stack-recon.md` |
 | W2.3 | the third-generation demo world | (none new) | `w2-gen3-demo-world.md` |
 | W2.2 | the dollar story + the three rollups | R-SP1 amd 1 | `w2-dollar-story-rollups.md` |
@@ -413,6 +420,11 @@ measurements. Do not restate a ruling's reasoning here.
   REFUSES TO PRICE; "your move" is priced locally; the window's opportunity is
   its own labelled thing; accepting is two ceremonies; the incumbent is audited,
   not enshrined.
+- **R-SG1** — a post-solve rebuild DERIVES its scope from the plan of record,
+  and a frame is ASSERTED (`standing_pins.assert_frame`), never assumed: no
+  tolerance, unreadable fails SAFE, and no verdict ships from a mis-framed
+  model. Scoped, a beyond-window placement is out of scope BY CONSTRUCTION and
+  that narrowing is intended.
 - **R-DP11** — the accept model is the plan of record's own scope, DERIVED inside
   the accept and never passed in.
 - **R-DP12** — the ledger is the only comparable number. The scaled objective
@@ -541,7 +553,8 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
-| R4.0 | the what-if path shares the accept's monolithic assembler; C5-vs-R-T2's hold contract is named, NOT measured | §5a.250 · `r4-rolling-stack-recon.md` |
+| R4.1 | two of four new slow tests cannot go red at fixture density; the ghost delta's denominator is a different model | §5a.257 · `r4-1-scope-frame.md` |
+| R4.0 | the what-if path shares the accept's monolithic assembler; C5-vs-R-T2's hold contract is MEASURED by R4.1 (no collision, 0 of 385) | §5a.250 · `r4-rolling-stack-recon.md` |
 | W2.2 | the bridge self-proof is only as strong as its specimen's feature coverage; the first-incumbent capture is unconditional on every solve | §5a.236 · `w2-dollar-story-rollups.md` |
 | S-02/S-03 | the board opener still returns `grade: None` though its record now exists; `certificate.md` is written but not registered | §5a.226 · `4x-certificate-contract.md` |
 | 4A (d.3) | a defined word asked about before it is said gets the second tier; the glossary is 10 entries against 27 emitted terms | §5a.222 · `4a-teaching-d3-term-explanation.md` |

@@ -199,6 +199,10 @@ def apply_planner_edit(
         fuls + demands, constraints, cost_model,
     )
     b_rep.end(RunStatus.SUCCESS)
+    # R-SG1 (2): ``pin_start_min`` and every standing pin below are minutes
+    # from the EVIDENCE origin. An accept that lands the planner's bar one
+    # frame off is a wrong plan of record, not a wrong answer — assert first.
+    sp.assert_frame(var_map, horizon_start, site="planner edit accept")
 
     apply_solution_hints(model, var_map, incumbent_assignments)
     # R-DP1 (4.0 hotfix): the pin MUST bind on BOTH axes — machine AND time.

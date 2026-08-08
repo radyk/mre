@@ -21045,3 +21045,214 @@ windows for every machine**, which made every refusal look correct and produced
 a *0 false sentences* result from an empty denominator. **The first number this
 recon produced was wrong, in the same shape as the defect it was pointed at.**
 Caught by (d.2)'s rule; the reader now RAISES rather than returning `[]`.
+
+
+---
+
+## Amendment — 2026-08-08: R-SG1 — A REBUILD SCOPES ITSELF, AND A FRAME IS ASSERTED, NOT ASSUMED (Session R4.1)
+
+The first fix session off the R4.0 dossier
+(`docs/closeouts/r4-rolling-stack-recon.md`), taking D1 (the unscoped rebuild)
+and D5 (the unasserted frame). Narrative: `docs/closeouts/r4-1-scope-frame.md`.
+
+### The ruling
+
+**R-SG1 — A REBUILD SCOPES ITSELF, AND A FRAME IS ASSERTED, NOT ASSUMED.**
+
+**(1)** Any post-solve rebuild of a base model against an incumbent derives its
+scope FROM THE PLAN OF RECORD ITSELF (`plan_of_record_scope` or its
+equivalent), never from a caller-supplied argument alone. *A guarantee a caller
+can forget is not a guarantee* (4B.31); this ruling makes that sentence law
+rather than a docstring. A caller MAY narrow further; no caller can widen past
+the plan of record by omission.
+
+**(2)** Wherever pin or placement arithmetic crosses an evidence-derived origin
+and a builder-derived origin, the frame equality is ASSERTED
+(`var_map.horizon_start` == the evidence `horizon_start`, and any sibling
+origins the census finds). A mismatch raises a typed, logged error naming both
+origins and the offset — the gesture fails loudly and no verdict about the
+plant is rendered from a mis-framed model. A silent wrong verdict is the defect
+class; a loud refusal is the floor.
+
+**(3)** Scope consequence, stated as policy: scoped to the plan of record, a
+genuinely-beyond-window placement is out of scope by construction. **That
+narrowing is intended.** Whether a rolling pool may ever offer next-window
+placements is a future product decision (R4.0 design question 2) and is not
+silently answered by this ruling either way.
+
+**(4) — added at fix time, from the census.** The assertion in (2) is ONE named
+function (`standing_pins.assert_frame`) called at each crossing, never
+re-implemented per site: the defect being fixed is precisely that each site did
+its own minute arithmetic against somebody else's origin. It carries **no
+tolerance** — the grid is integer minutes and a pin binds on it exactly, so a
+"small" offset is simply every pin misplaced by that much — and an
+**unreadable origin fails SAFE**, which is the third-state law (`unreadable`
+4B.18, `undetermined` 4B.23, `UNDECIDABLE` 4A.x) applied to the frame. A
+missing origin reports `offset_minutes = None`, never 0: a zero offset is a
+claim, and 4B.23 already ruled on defaults that ASSERT.
+
+**(5) — added at fix time.** A rebuild site that reads the builder's OWN origin
+for its arithmetic (`hstart = var_map.horizon_start`) cannot disagree with
+itself and satisfies (2) by construction. This is the preferred shape where the
+site owns its build; the assertion exists for the sites that cannot take it,
+because they must honour an origin the evidence fixed.
+
+**Origin.** R4.0 — the unscoped rebuild proven unable to reproduce a plan the
+board already had (INFEASIBLE with **no cut applied at all**, 2.15s); 8 of 8
+"infeasible" roads FEASIBLE when scoped; the 35-day frame offset that made
+every expressible pin land before every calendar window.
+
+### The fix-time census (clause 1), re-run rather than inherited
+
+R4.0 enumerated nine post-solve rebuild sites. Re-censused at fix time from
+every `SolverBuilder(...).build` call in `src/`, there are **ten**, and the
+tenth was already conformant:
+
+| site | scope source |
+| --- | --- |
+| `sandbox.py:660` baseline · `:1127` audit · `:1474` beat one · `:1721` beat two | caller-supplied |
+| `local_price.py:235` held world · `:595` validation rebuild | inherited `build_args` |
+| `planner_edit.py:197` | **self-derived** (4B.31) |
+| **`forced_alternatives.py:397`** | **self-derived — NEW** |
+| **`solution_pool.py:207`** | **self-derived — NEW** |
+| **`rolling_horizon.py:1868` `_final_extract`** | **self-derived (`sched`) — the tenth, already correct** |
+
+`_final_extract` is a genuine post-solve rebuild against the committed
+placements, and it is the ONE site in the product that reads
+`var_map.horizon_start` directly for its pin arithmetic — i.e. it is clause (5)
+already in practice, written before there was a clause. `scenario.py:355`,
+`__main__.py:443`, `demo.py:201` and `rolling_horizon._build_window` are the
+different class (a full pipeline run, or the solve itself, with no incumbent to
+reproduce) and are named, not changed.
+
+### The crossing census (clause 2)
+
+Eight sites cross an evidence origin into a builder frame and now assert:
+`sandbox` ×4, `planner_edit` ×2, `solution_pool` ×1, `local_price` ×2.
+**`forced_alternatives` does not cross** — its cut is a pure assignment literal
+and `apply_solution_hints` re-derives its minutes inside the builder — so its
+assertion is a floor against a future edit, and is documented as such at the
+site rather than presented as a fix.
+
+**`solution_pool` is the only site that carried both defects**: unscoped, and
+crossing (`incumbent_starts_min` measured from the evidence origin, then handed
+to `add_start_diversity_cut` against `var_map.op_start`).
+
+### The proof, on the specimen that produced the false sentence
+
+Beat one on a scratch copy of child `b5daba66` (run dir `ada15460-…`), called
+exactly as the API calls it for a document with no rolling block
+(`restrict_op_ids=None`), at 4x's own specimen — op `004733d3-aa3` on
+`fd34d391-ffa` at `2026-01-08T09:52`:
+
+* **before** (assertion physically removed): `impossible`, *"this placement
+  isn't possible here — the machine is not open at that time [C1/C2]"* — the
+  recorded false sentence, reproduced on demand;
+* **after**: `FrameMismatch` — evidence origin `2026-01-05`, builder origin
+  `2025-12-01`, **offset −50,400 minutes**, and no verdict about the plant.
+
+Restored by captured bytes, sha256-verified.
+
+### What the scope fix actually bought, measured on gen-3
+
+Snapshot 695 operations; plan of record **386** — the old rebuild carried 309
+operations the incumbent never placed.
+
+| pool | before (R4.0) | after |
+| --- | --- | --- |
+| alternatives, default 10s member budget | 0 of 8 publishable | **4 of 8** |
+| alternatives, 120s member budget | — | **8 of 8 priced** |
+| near-optimal, k=3 | status `empty`, 3 of 3 INFEASIBLE | status **`ready`**, 3 of 3 FEASIBLE |
+
+**D2 stops being latent here.** R4.0 recorded that all eight gen-3 members
+returned a genuine `INFEASIBLE`, and concluded the three-state fusion was a
+latent adjacent defect. Once the model is correct, four of the eight return
+**`UNKNOWN`** — budget exhaustion — and are still published as
+`infeasible_this_horizon`. Raising the per-member budget to 120s prices all
+four. So after R-SG1 the fusion is no longer latent: it is the dominant wrong
+verdict on the demo board, and R4.3 inherits a live defect rather than a
+theoretical one.
+
+### A second finding the scope fix EXPOSED (reported, not fixed)
+
+`forced_alternatives` computes `objective_delta_pct` against
+`_incumbent_objective(evidence)` — the last recorded `solve_complete`
+objective. On gen-3 that record is the **winning portfolio member's
+rolling-window solve, at a gap of 89.6%**. The ghost's model is the 386-op plan
+of record. The two are different models, so the ratio is not a comparable pair
+— and the symptom is visible: every priced member reports a delta of about
+**−5.87%**, i.e. "moving off the incumbent machine is cheaper".
+
+This is **not caused by R-SG1** — before the fix the denominator was equally
+mismatched (a 695-op model against the same record) and the numerator simply
+never existed, because every member was infeasible. The scope fix makes the
+delta reachable for the first time. R-DP12 already says the ledger is the only
+comparable number and the scaled objective is labelled telemetry; pricing
+ghosts by ledger is the fix, and it is not this session's.
+
+### Q6, answered (R4.0 §4.3 question 6 — NAMED, now MEASURED)
+
+Does C5's finding (single-worker CP-SAT follows warm-start HINTS loosely — 43
+untouched moves at workers=1) touch R-T2's hold-everything-else contract?
+**No.** One accept per cell on a scratch copy of gen-3, all at workers=1,
+counting untouched placements that moved:
+
+| cell | gesture | placements | untouched moved |
+| --- | --- | --- | --- |
+| A | zero-move | held (`hold_all_placements=True`) | **0** of 385 |
+| B | zero-move | free | 0 of 385 |
+| C | **real move** | **held** | **0 of 385** |
+| D | real move | free | **238 of 385** |
+
+Cell D is the positive control, and it is why cell C's zero means something: the
+same board, the same reader, 238 movers. Pins are hard constraints and they
+hold. A side measurement worth keeping: the UNPINNED accept path moves 238 of
+386 placements at workers=1 — far beyond C5's 43 — which is a direct measure of
+what `hold_all_placements` (4B.24) buys.
+
+### The R-T2 correlation break (the errand's C4 item 5)
+
+Both beats already keyed on their RESOLVED pin, which is what R-T2 requires —
+beat two's own comment settles it ("deriving it from the request would give
+beat one and beat two different ids for the same defaulted gesture"). They
+disagreed on the **spelling of the instant**: beat one round-trips the start
+through `datetime` and emits `2026-01-12T17:33:00+00:00`; beat two passes the
+document's own string through verbatim, `2026-01-12T17:33:00Z`. Measured:
+`corr-113002438e3b8b51` vs `corr-8122788d7442d7d1`. Same instant, two ids, and
+the two-beat contract silently broken for **every gesture whose start came off
+the board** — which is every gesture a planner makes by dragging a bar.
+
+A correlation id names a GESTURE, and an instant is a point in time rather than
+a spelling, so the canonicalization lives in `correlation_id_for` — the one
+function both beats call, and the only place that can make them unable to
+disagree. `test_two_beat_gesture_through_the_api` is green; the `--runslow`
+ladder goes 6 red to 5.
+
+### An instrument lesson, on this session's own probe (again)
+
+The Q6 probe's first reader looked only at `assignment["resource_id"]`, which
+snapshot entities do not carry (it is under `resource_assignments`), and
+returned **0 placements for all 386 bars**. It then reported *0 untouched
+placements moved* — a clean bill from an empty set, on the probe written
+specifically to stop inferring Q6 from a code read. Caught by the same (d.2)
+rule R4.0's `p2_frame` was caught by, one session later, in a different module.
+The reader now uses the shared `_placements` and RAISES on an empty read, and
+cells C/D were added so that a zero is only ever reported by an instrument
+demonstrated capable of a nonzero.
+
+### The predicate audit (R4.0's own artifact, by the next session)
+
+`verify_gen3` identity half PASSES at HEAD (digest `8071cdaa…`). `p2_frame`
+re-run on both correctly-framed boards: 25 probes each, 7 refusals each, **0
+false**, frame offset **+0 minutes** — R4.0's substantive claim holds.
+
+**Two gaps, both in the instrument rather than the conclusion.** First, R4.0's
+counter is one-directional and one-sentence-family: it flags a refusal saying
+"not open at that time" when the calendar is open, and cannot see a false
+refusal wearing the other sentence, nor a **false permission** — the direction
+that puts a planner on a closed machine. Re-run as a full 2×2 against the same
+ground truth: **50 of 50 agreement, 0 false refusals, 0 false permissions.** The
+claim is true and is now stronger than the instrument that produced it could
+establish. Second, the figure **"20 of 20" does not reproduce as stated** — it
+is one board at `--n 4`, not "both correctly-framed boards", which at the
+default `--n 5` is 50 probes.

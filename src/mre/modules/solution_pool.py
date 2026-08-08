@@ -110,6 +110,8 @@ def warm_solution_pool(
     from mre.contracts.vocabularies import ModuleCode, RunStatus
     from mre.modules.calendar_utils import flatten_all_calendars
     from mre.modules.extractor import Extractor
+    from mre.modules import standing_pins as sp_mod
+    from mre.modules.sandbox import _restrict_window, plan_of_record_scope
     from mre.modules.scenario import derive_base_context
     from mre.modules.schedule_assembler import assemble_schedule_document
     from mre.modules.snapshot_store import SnapshotStore
@@ -145,6 +147,21 @@ def warm_solution_pool(
     costmodels = list(reader.iter_entities("costmodel"))
     incumbent_assignments = list(reader.iter_entities("assignment"))
     identity_map = reader.read_identity_map()
+
+    # R-SG1 clause (1), Session R4.1 — THE REBUILD SCOPES ITSELF.
+    # The near-optimal pool is the SECOND consumer of the unscoped rebuild
+    # R4.0 diagnosed (the forced-alternatives ghost is the first). Measured on
+    # a scratch copy of the gen-3 demo board before this line existed: status
+    # ``empty``, 3 of 3 members INFEASIBLE — not because the plant admits no
+    # near-optimal alternative, but because the model carried 695 operations
+    # against an incumbent that placed 386.
+    #
+    # Derived, never passed in (4B.31): a guarantee a caller can forget is not
+    # a guarantee.
+    restrict_op_ids = plan_of_record_scope(incumbent_assignments)
+    ops, wps, fuls, demands = _restrict_window(
+        ops, wps, fuls, demands, restrict_op_ids)
+
     cost_model = costmodels[0] if costmodels else {
         "id": "default-cm", "resource_rates": {},
         "setup_cost_basis": {"fixed_per_setup": 50.0, "scrap_cost_per_unit": 0.0},
@@ -209,6 +226,11 @@ def warm_solution_pool(
             fuls + demands, constraints, cost_model,
         )
         b_rep.end(RunStatus.SUCCESS)
+        # R-SG1 (2): ``incumbent_starts_min`` is minutes from the EVIDENCE
+        # origin and is about to become a no-good cut over ``var_map.op_start``,
+        # which is minutes from the BUILDER's. This is the only site in the
+        # product that carried BOTH R4.0 defects — unscoped and uncrossed.
+        sp_mod.assert_frame(var_map, horizon_start, site="near-optimal pool")
 
         apply_solution_hints(model, var_map, incumbent_assignments)
         if incumbent_objective and incumbent_objective > 0:

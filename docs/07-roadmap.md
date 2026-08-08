@@ -1862,8 +1862,21 @@ Queue:
    order because the accept-child turned out to BE the feasibility root for the
    refused nudges:
 
-   * **R4.1 — the scope guard and the frame invariant (D1, D5).** Opens
-     `forced_alternatives.py`, `solution_pool.py`, `sandbox.py`. Widest blast
+   * **R4.1 — the scope guard and the frame invariant (D1, D5). ✅ DONE
+     2026-08-08 — R-SG1 ruled and BUILT** (§5a.251-257; docs/04 2026-08-08;
+     `docs/closeouts/r4-1-scope-frame.md`). Both pool builders now derive their
+     scope from the plan of record; the frame is asserted at eight crossings by
+     one named function. Gen-3: the near-optimal pool goes `empty` → `ready`
+     (3 of 3 FEASIBLE) and the alternatives pool 0 of 8 → 4 of 8 at the default
+     member budget, **8 of 8 at 120s**. The R-T2 correlation rider landed
+     (runslow 6 red → 5). **Two things R4.3 inherits, both measured here:** D2
+     is no longer latent (four gen-3 members now return `UNKNOWN` and are still
+     published as `infeasible_this_horizon`), and the ghost's
+     `objective_delta_pct` denominator is a different model from its numerator,
+     so priced members read "cheaper to move off the incumbent" (−5.87%).
+     **The gen-3 re-pool was NOT performed** — the STOP was taken; see
+     §5a.255. Original brief text follows.
+     Opens `forced_alternatives.py`, `solution_pool.py`, `sandbox.py`. Widest blast
      radius: it restores the drag-price-accept loop on every rolling board and
      brings back **8 of 8 measured roads** on the gen-3 pool. Derive the scope
      from the plan of record (4B.31 already wrote the remedy —
@@ -8051,6 +8064,118 @@ reader read `calendar["windows"]`, a key that does not exist (the real one is
 *0 false sentences* result from an empty denominator — the same shape as the
 defect it was pointed at. Caught by (d.2)'s rule; the reader now RAISES rather
 than returning `[]`. **The first number this recon produced was wrong.**
+
+**§5a.251 — R-SG1 RULED AND BUILT: A REBUILD SCOPES ITSELF (Session R4.1,
+2026-08-08; docs/04 2026-08-08; `docs/closeouts/r4-1-scope-frame.md`).** The
+first fix session off the R4.0 dossier, taking D1 and D5. Clause (1): both pool
+builders now derive their scope from `plan_of_record_scope(incumbent)` rather
+than compiling the whole snapshot — the mechanism 4B.31 wrote for the accept and
+whose census stopped two seams short. Clause (2): the frame is ASSERTED by one
+named function, `standing_pins.assert_frame`, at every crossing of an
+evidence-derived and a builder-derived origin. Clauses (4) and (5) were added at
+fix time from the census: the check is ONE function with NO tolerance and a
+fail-safe on an unreadable origin (`offset_minutes = None`, never 0 — 4B.23's
+default-that-ASSERTS), and a site reading the builder's own origin satisfies (2)
+by construction.
+
+**§5a.252 — THE FIX-TIME CENSUS FOUND A TENTH REBUILD SITE, ALREADY CORRECT.**
+R4.0 enumerated nine post-solve rebuilds. Re-run at fix time over every
+`SolverBuilder(...).build` in `src/`, there are **ten**:
+`rolling_horizon.py:1868` `_final_extract` is a genuine post-solve rebuild
+against the committed placements, and it was already conformant on BOTH counts
+— scope self-derived from `sched`, and `hstart = var_map.horizon_start`, making
+it the ONE site in the product that reads the builder's own origin for pin
+arithmetic. It is clause (5) in practice, written before there was a clause.
+`scenario.py:355`, `__main__.py:443`, `demo.py:201` and
+`rolling_horizon._build_window` are the different class and are named, not
+changed. **The crossing census is eight sites** (`sandbox` ×4, `planner_edit`
+×2, `solution_pool` ×1, `local_price` ×2); `forced_alternatives` does NOT cross,
+and its assertion is documented at the site as a floor against a future edit
+rather than presented as a fix. **`solution_pool` is the only site that carried
+both defects.**
+
+**§5a.253 — WHAT THE SCOPE FIX BOUGHT, MEASURED ON GEN-3.** Snapshot 695
+operations, plan of record 386 — the old rebuild carried 309 the incumbent never
+placed. Near-optimal pool k=3: status `empty` / 3 of 3 INFEASIBLE → status
+**`ready`** / 3 of 3 FEASIBLE. Alternatives pool budget 8: 0 of 8 publishable →
+**4 of 8** at the default 10s member budget, and **8 of 8 priced** at 120s. The
+b5daba66 proof: with the assertion physically removed, beat one emits 4x's exact
+false sentence ("the machine is not open at that time"); with it, `FrameMismatch`
+naming both origins and **−50,400 minutes**, and no verdict about the plant.
+Restores by captured bytes, sha256-verified.
+
+**§5a.254 — D2 IS NO LONGER LATENT, AND THAT IS R4.1's DOING.** R4.0 recorded
+that all eight gen-3 members returned a genuine `INFEASIBLE` and therefore
+classed the three-state fusion as a latent adjacent defect. With the model
+correct, **four of the eight return `UNKNOWN`** — budget exhaustion — and are
+still published as `infeasible_this_horizon`; at a 120s member budget all four
+price. **R4.3 inherits a live defect rather than a theoretical one**, and it is
+now the dominant wrong verdict on the demo board. **A second finding the scope
+fix EXPOSED but did not cause:** `objective_delta_pct` divides the ghost's
+386-op objective by `_incumbent_objective(evidence)`, which on gen-3 is the
+winning portfolio member's rolling-window solve at an **89.6% gap** — a
+different model, so not a comparable pair, and every priced member reads about
+**−5.87%** ("cheaper to move off the incumbent"). The denominator was equally
+mismatched before (695 ops against the same record); the numerator simply never
+existed. R-DP12 already says the ledger is the only comparable number. Pricing
+ghosts by ledger is the fix and is NOT this session's.
+
+**§5a.255 — THE GEN-3 RE-POOL: THE STOP WAS TAKEN, AND THE ORDER WAS
+DELIBERATELY REVERSED.** W4 authorized a recorded custody act — rebuild the
+pinned demo board's alternatives pool so the demo has ghosts — with a STOP if
+any member still refused. Measured on a SCRATCH COPY FIRST: at the API default
+the pool is 4 of 8, and the four refusals are D2 mislabels; the four that price
+carry the non-comparable −5.87% delta. Writing four false "no road" verdicts and
+eight misleading negative deltas onto the board a demo runs on is precisely the
+harm the STOP exists to prevent, so **`rolling-9fdee7aa-ec5` was not written to
+at all** and its existing capsule stands as its record, unchanged; placement
+digest `8071cdaa…` re-verified at HEAD before and after the session's work.
+**The deviation from the brief's literal sequence is measure-then-write rather
+than write-then-check**, and it is named here because it means the pinned world
+never entered the state the brief contemplated. Gen-3 remains ghost-less, and
+regains ghosts once R4.3 lands — at which point the re-pool is worth doing with
+a raised member budget.
+
+**§5a.256 — Q6 ANSWERED: C5's FINDING DOES NOT TOUCH R-T2's CONTRACT.** R4.0
+§4.3 question 6, named-not-measured, is now measured — four accepts on a scratch
+copy of gen-3, all at workers=1, counting untouched placements that moved:
+zero-move pinned **0 of 385**, zero-move free 0, **real move pinned 0 of 385**,
+real move free **238 of 385**. Cell D is the positive control and is what makes
+cell C's zero mean anything. Pins are hard constraints and they hold. **A side
+measurement worth keeping:** the UNPINNED accept path moves 238 of 386
+placements at workers=1, far beyond C5's 43 — a direct measure of what
+`hold_all_placements` (4B.24) buys. **And the probe failed the same way R4.0's
+did first:** its hand-rolled reader looked only at `assignment["resource_id"]`,
+which snapshot entities do not carry, read **0 placements from 386 bars**, and
+reported *0 movers* from an empty set. The reader now uses the shared
+`_placements` and RAISES on an empty read.
+
+**§5a.257 — R4.1's CARRY-FORWARDS (reported, deliberately NOT fixed).**
+**(a) TWO OF THE FOUR NEW SLOW TESTS DO NOT DISCRIMINATE AT THE FIXTURE'S
+DENSITY.** `test_the_alternatives_pool_publishes_on_a_rolling_board` and
+`test_the_scoped_rebuild_reproduces_the_incumbent` both still PASS when both
+scope derivations are physically reverted, because 40 orders over a 14-day
+window fit even unscoped. They are post-conditions, they say so in their own
+docstrings, and the discriminating member of the file is
+`test_the_near_optimal_pool_is_not_empty_on_a_rolling_board` (proven red:
+`pool empty: ['INFEASIBLE','INFEASIBLE']`). The counterfactual at demo density
+is the gen-3 measurement in §5a.253, not a test. **A denser rolling fixture
+would make all three discriminate and was not built.**
+**(b) THE `--runslow` BASELINE WAS NOT MEASURED BY THIS SESSION.** The attempt
+was killed by a 10-minute tool timeout against a ~60-minute ladder, and rather
+than serialize another hour the baseline is taken as R4.0's measured
+3248/21/6+1xf, justified by `git diff 9854e9d..HEAD -- src/` being
+`corpus_index.json` only. Both ladders were measured once AFTER the work.
+**(c) THE FRAME ASSERTION IS A REFUSAL, NOT A REPAIR.** R-SG1(2) makes a
+mis-framed model fail loudly; it does not give the dateless child a reference
+date. Every consumer R4.0 named — the nine `derive_base_context` callers that do
+not walk to the root run — is now protected loudly rather than silently wrong,
+which is the design, and R4.2 is what actually repairs it.
+**(d) THE `local_price.py:595` VALIDATION REBUILD ASSERTS AGAINST
+`world.horizon_start`**, which is the same evidence origin the world was built
+from — so it catches builder drift on a rebuild, not a world loaded in the wrong
+frame to begin with. That case is caught one level up at `:235`. Stated because
+the two look interchangeable and are not.
 
 ## 6. Open rulings queue
 
