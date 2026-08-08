@@ -312,12 +312,19 @@ def build_document_from_run(
     runs_subdir: str = "runs",
     parent_schedule_id: Optional[str] = None,
     standing_pin_ops: Optional[set[str]] = None,
+    parent_document: Optional[dict] = None,
 ) -> ScheduleDocument:
     """Rebuild the document from a persisted pipeline run directory.
 
     Reads the snapshot's entities + identity map and the evidence JSONL
     under ``out_dir/<runs_subdir>/``, then calls the pure assembler.
     ``standing_pin_ops`` (R-DP8) marks the lineage's committed ops.
+
+    ``parent_document`` (R-CH1, Session R4.2) is the PARENT version's persisted
+    document, when this run mints a CHILD of one — an accept, an audit accept.
+    It is what makes the child the same KIND of thing as its parent: the rolling
+    block and the plant's calibration are INHERITED from it rather than lost.
+    None for a root solve, which has no parent to inherit from.
     """
     from mre.modules.snapshot_store import SnapshotStore
 
@@ -337,7 +344,7 @@ def build_document_from_run(
                 if line:
                     evidence.append(json.loads(line))
 
-    return assemble_schedule_document(
+    document = assemble_schedule_document(
         snapshot_id=snapshot_id,
         run_id=run_id,
         schedule=schedules[-1],
@@ -358,6 +365,182 @@ def build_document_from_run(
         edges=list(reader.iter_entities("precedenceedge")),
         standing_pin_ops=standing_pin_ops,
     )
+    return inherit_child_metadata(document, parent_document)
+
+
+# ---------------------------------------------------------------------------
+# R-CH1 (Session R4.2) — WHAT A CHILD INHERITS AT ACCEPT.
+#
+# Both accept ceremonies mint their child through build_document_from_run, i.e.
+# through the MONOLITHIC assembler, which has no rolling / calibration /
+# portfolio parameter at all. So a child of a rolling, calibrated parent came out
+# monolithic and uncalibrated BY CONSTRUCTION (R4.0 §A3, confirmed live at
+# contract 1.17 in §3.5), and the lost rolling block is what then handed the next
+# planner gesture ``restrict_op_ids=None`` — 160 refused nudges, 23 of them
+# wearing a confident false sentence about a machine that was open.
+#
+# THE MECHANISM IS INHERITANCE, NOT RE-DERIVATION, and that is a deliberate
+# choice over the obvious alternative (route the accept through
+# ``assemble_rolling_document``). That function needs a RollingView, and a
+# RollingView is the WINDOW SOLVE's own record: its ``status``, ``gap``,
+# ``op_drivers``, ``cost_ledger``, ``incumbent_trail``, ``earliness_tiebreak``
+# are all statements about a solve an accept did not run. Manufacturing one from
+# an accept would write the accept's re-solve telemetry into fields that mean
+# "the rolling window solve's" — a provenance lie, and precisely the "a default
+# that ASSERTS manufactures a claim out of a gap" defect class (4B.23).
+#
+# What the child's own run genuinely produces — placements, ledger, service
+# outcomes, solver telemetry — the monolithic assembler already renders
+# correctly. What it CANNOT produce is the metadata that belongs to the lineage
+# rather than to this solve. That is exactly what is inherited here, and nothing
+# else is touched.
+# ---------------------------------------------------------------------------
+
+
+class ChildInheritanceError(ValueError):
+    """R-CH1: the child could not be minted as the same KIND of thing as its
+    parent. Raised rather than shipping a wrong-kind child in its place — a
+    silently monolithic child of a rolling board is the defect this ruling
+    exists to end, and a silently WRONG rolling block would be worse."""
+
+
+def _inherited_calibration(cal_raw: dict, parent_id: str) -> CalibrationBlock:
+    """R-CH1 clause (3) — the parent's profile, carried by reference.
+
+    THE ACCEPT DID NOT RE-MEASURE AND DID NOT APPLY. R-CAL1 gives ``applied``
+    one meaning — "the coefficients this solve actually took from it" — and an
+    accept re-solve takes none of them: it runs at the sandbox's own
+    deterministic budget and seed. Copying the block verbatim would therefore
+    state that the child ran at the calibrated budget, which is false. So the
+    profile's IDENTITY (state, plant_key, profile_id, when it was measured, the
+    window it was measured at) is inherited and the three "what this solve did
+    with it" fields — ``applied``, ``window_solved``, ``drift`` — are cleared.
+
+    The provenance rides in the block's own ``sentence``, which is the field
+    every calibration surface already renders. That is a deliberate refusal to
+    add a field: an ``inherited_from`` attribute would be a contract shape
+    change, and the sentence carries the same fact where a planner will
+    actually read it.
+    """
+    block = CalibrationBlock(**cal_raw)
+    who = parent_id or "its parent version"
+    return block.model_copy(update={
+        "applied": {},
+        "window_solved": None,
+        "drift": None,
+        "sentence": (
+            f"inherited from {who}: {block.sentence} "
+            "This version is an accepted edit of that plan, not a new search — "
+            "it neither re-measured this plant's calibration nor ran at its "
+            "coefficients."
+        ),
+    })
+
+
+def inherit_child_metadata(child: ScheduleDocument,
+                           parent: Optional[dict]) -> ScheduleDocument:
+    """R-CH1 — a child is the same kind of thing as its parent, and says where
+    it came from. ``parent`` is the parent version's persisted document (a
+    plain dict, as it is read off disk); None means this run has no parent and
+    the document is returned untouched.
+
+    Four clauses, in the order they are ruled:
+
+      (1) an accept on a ROLLING parent mints a ROLLING child — the window, the
+          frozen front, the tray and the coarse zone as the parent carried them,
+          with each bar's ``commitment_state`` and the two counts DERIVED from
+          the child's own placements against the inherited boundary;
+      (2) — the run-context write, which is not here (see ``planner_edit`` and
+          ``sandbox.materialize_audit_offer``);
+      (3) calibration is inherited BY DECLARATION;
+      (4) the portfolio block belongs to the solve that ran the portfolio, and
+          an accept is not that solve.
+
+    A MONOLITHIC parent mints a monolithic child, unchanged. That is the true
+    negative and it is load-bearing: this ruling makes children match their
+    parents, not "makes every child rolling".
+    """
+    if not parent:
+        return child
+
+    parent_id = str(parent.get("schedule_id") or "")
+    solver = child.solver
+
+    # ---- clause (3): calibration, INHERITED BY DECLARATION -----------------
+    cal_raw = (parent.get("solver") or {}).get("calibration")
+    if cal_raw:
+        solver = solver.model_copy(
+            update={"calibration": _inherited_calibration(cal_raw, parent_id)})
+    # A parent that declares NO calibration hands down nothing, and the child
+    # declares nothing in turn. It deliberately does NOT manufacture
+    # ``state="absent"`` here: that value means "nobody has measured this
+    # plant", and inferring it from the fact that the parent document carries no
+    # block would be a claim about the plant made from a fact about our storage
+    # (the 4B.18 discipline). Inherited absence, not asserted absence.
+
+    # ---- clause (4): what is NOT inherited, stated in code ------------------
+    # A PortfolioBlock is K deterministic searches at consecutive seeds and the
+    # ledger comparison between them (R-BK1). An accept runs ONE pinned
+    # re-solve, so there is no portfolio to publish and the parent's belongs to
+    # the parent. The summary screen's absent-portfolio state already covers
+    # this honestly; the parent's story stays reachable through lineage.
+    solver = solver.model_copy(update={"portfolio": None})
+    child = child.model_copy(update={"solver": solver})
+
+    # ---- clause (1): the rolling block -------------------------------------
+    roll_raw = parent.get("rolling")
+    if not roll_raw:
+        return child
+
+    # THE FRAME, ASSERTED RATHER THAN ASSUMED (R-SG1 clause 2, at the document
+    # layer). The tray, the window and the boundary are inherited WHOLE, and
+    # that is only sound because an accept re-places the plan of record and can
+    # never admit or drop a job: its model is built over exactly the operations
+    # the published plan places (R-DP11). If that ever stops holding, the
+    # inherited tray is a statement about a different plan — so it is checked,
+    # with no tolerance, rather than believed.
+    parent_ops = {a.get("operation_ref") for a in (parent.get("assignments") or [])}
+    child_ops = {a.operation_ref for a in child.assignments}
+    if parent_ops != child_ops:
+        gained, lost = sorted(child_ops - parent_ops), sorted(parent_ops - child_ops)
+        raise ChildInheritanceError(
+            f"R-CH1: this child does not place its parent's plan "
+            f"({len(child_ops)} operations against {len(parent_ops)}; "
+            f"{len(gained)} gained, {len(lost)} lost), so the parent's window "
+            f"and beyond-horizon tray do not describe it. Nothing is inherited "
+            f"from a plan the child is not a version of.")
+
+    parent_roll = RollingBlock(**roll_raw)
+    frozen_until = parent_roll.frozen_until
+
+    asgns: list[AssignmentBlock] = []
+    committed = active = 0
+    for a in child.assignments:
+        # The DEFINITION, not the parent's answer: rolling_horizon commits an op
+        # whose start falls inside the frozen front (``s_min < frozen_end_min``).
+        # Derived from the child's own placement so a bar the accept moved
+        # carries the state its new start earns.
+        first = a.chunks[0].start if a.chunks else None
+        state = "committed" if (first is not None and first < frozen_until) else "active_window"
+        if state == "committed":
+            committed += 1
+        else:
+            active += 1
+        asgns.append(a.model_copy(update={"commitment_state": state}))
+
+    rolling = parent_roll.model_copy(update={
+        "committed_count": committed,
+        "active_count": active,
+    })
+    return child.model_copy(update={
+        "assignments": asgns,
+        "rolling": rolling,
+        # A rolling document's reference_date IS its reference origin (that is
+        # what the rolling assembler writes). An accept run records no M3, so
+        # the monolithic path found none — take the lineage's, which is the
+        # clock every placement in this document is expressed in.
+        "reference_date": child.reference_date or parent_roll.reference_origin,
+    })
 
 
 # ---------------------------------------------------------------------------

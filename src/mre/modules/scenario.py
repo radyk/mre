@@ -118,6 +118,18 @@ def derive_base_context(runs_dir: Path | str) -> dict:
     configuration measures drift, not the modification.
     """
     ctx: dict[str, Any] = {}
+    # R-CH1 clause (2) (Session R4.2) — the M5 FALLBACK for reference_date.
+    #
+    # A root pipeline run records the reference date on its M3 validator
+    # context. An ACCEPT run has no M3 — it re-solves an existing plan — so this
+    # function recovered `solver_workers` and `solver_seed` from a child's own
+    # run dir (the 2026-08-06 errand taught it to) and silently not the third
+    # field, which is the direct cause of R4.0's 23 false sentences. Both accept
+    # ceremonies now record the date they actually built with on their M5 model
+    # build, and it is read here as a FALLBACK: M3 is the root pipeline's own
+    # statement and still wins wherever it exists, so no base run's recovered
+    # context changes shape.
+    m5_reference_date: Optional[str] = None
     runs_dir = Path(runs_dir)
     if not runs_dir.exists():
         return ctx
@@ -138,6 +150,10 @@ def derive_base_context(runs_dir: Path | str) -> dict:
                     ctx["reference_date"] = rd
                 if cfg.get("outlier_threshold_ratio") is not None:
                     ctx["outlier_threshold_ratio"] = cfg["outlier_threshold_ratio"]
+            elif module == "M5":
+                rd = cfg.get("reference_date")
+                if rd and rd != "now":
+                    m5_reference_date = rd
             elif module == "M4" and "horizon-slice" in purpose:
                 if cfg.get("horizon_days") is not None:
                     ctx["horizon_days"] = cfg["horizon_days"]
@@ -153,6 +169,8 @@ def derive_base_context(runs_dir: Path | str) -> dict:
                     ctx["solver_workers"] = cfg["num_search_workers"]
                 if cfg.get("random_seed") is not None:
                     ctx["solver_seed"] = cfg["random_seed"]
+    if "reference_date" not in ctx and m5_reference_date:
+        ctx["reference_date"] = m5_reference_date
     return ctx
 
 

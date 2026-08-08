@@ -1165,7 +1165,18 @@ def materialize_audit_offer(
 
     b_rep = Reporter.begin(
         module=ModuleCode.M5, purpose="audit offer model build",
-        config={"audit": True, "seed": sd, "deterministic_time": det},
+        # R-CH1 clause (2), Session R4.2. THE SAME CLASS, ONE SEAM FURTHER ON:
+        # this ceremony recorded neither the reference date NOR the horizon, so
+        # an audit-accept child was not merely dateless — `_m5_horizon` on its
+        # own run dir raised "M5 run evidence carries no horizon" and every
+        # sandbox surface pointed at it failed outright. Found by censusing the
+        # class rather than fixing the seam the dossier named, per this repo's
+        # own law that a defect class fixed at one seam is not fixed.
+        config={"audit": True, "seed": sd, "deterministic_time": det,
+                "horizon_start": horizon_start.isoformat(),
+                "horizon_end": horizon_end.isoformat(),
+                "reference_date": (reference_date.isoformat()
+                                   if reference_date else None)},
         trigger="audit_accept", snapshot_id=child_snap_id, sink_dir=runs_dir)
     model, var_map = SolverBuilder(reference_date=reference_date).build(
         wps + ops + edges, resources + pools, flattened,

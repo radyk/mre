@@ -197,13 +197,20 @@ kept offering to follow it.
 ## Current status
 
 **Roadmap position:** Phase 3 COMPLETE (qualified); Phase 4 preparation.
-**Last closed: Session R4.1 — the scope guard and the frame invariant**,
+**Last closed: Session R4.2 — what a child inherits at accept**, 2026-08-08
+(docs/07 §5a.258-264; docs/04 2026-08-08; **R-CH1**; no contract change (1.17),
+prompts unchanged; `docs/closeouts/r4-2-child-inheritance.md`). **BOTH ACCEPT
+CEREMONIES MINT A CHILD OF THE PARENT'S OWN KIND, AND A CHILD'S OWN RUN DIR NOW
+YIELDS ITS REFERENCE DATE AND M5 HORIZON. D3 AND D4 CLOSED.** **THE WHAT-IF IS
+BROKEN ON EVERY ROLLING BOARD** one seam earlier than the assembler (§5a.263) —
+measured, routed, NOT fixed; lineage replay onto gen-3 is unblocked, not run.
+Previously: Session R4.1 — the scope guard and the frame invariant,
 2026-08-08 (docs/07 §5a.251-257; docs/04 2026-08-08; **R-SG1**; no contract
 change, prompts unchanged; `docs/closeouts/r4-1-scope-frame.md`). **BOTH POOL
 BUILDERS SCOPE THEMSELVES; EIGHT CROSSINGS ASSERT THEIR FRAME. THE GEN-3 RE-POOL
 STOP WAS TAKEN — the pinned world was NOT written to. D2 IS NOW LIVE, NOT
 LATENT** — it and the ghost delta's denominator are routed to R4.3.
-Previously: Session R4.0 — RECON: the rolling interaction stack, 2026-08-07
+Earlier: Session R4.0 — RECON: the rolling interaction stack, 2026-08-07
 (docs/07 §5a.245-250 + §5b R4 item 0; docs/04 2026-08-07; **no ruling, no
 contract change, no `src/` CODE change, prompts unchanged v19 / v9**; narrative
 `docs/closeouts/r4-rolling-stack-recon.md`). **THE TWO POOL BUILDERS AND EVERY
@@ -227,6 +234,7 @@ Recent sessions, newest first. `docs/closeouts/<file>.md` is the narrative:
 
 | session | subject | ruling | close-out |
 | --- | --- | --- | --- |
+| R4.2 | what a child inherits at accept | R-CH1 | `r4-2-child-inheritance.md` |
 | R4.1 | the scope guard and the frame invariant | R-SG1 | `r4-1-scope-frame.md` |
 | R4.0 | recon: the rolling interaction stack | (none — recon) | `r4-rolling-stack-recon.md` |
 | W2.3 | the third-generation demo world | (none new) | `w2-gen3-demo-world.md` |
@@ -420,6 +428,12 @@ measurements. Do not restate a ruling's reasoning here.
   REFUSES TO PRICE; "your move" is priced locally; the window's opportunity is
   its own labelled thing; accepting is two ceremonies; the incumbent is audited,
   not enshrined.
+- **R-CH1** — a child is the same KIND of thing as its parent and says where it
+  came from: the rolling block INHERITED (states and counts derived from the
+  child's own placements, the frame asserted), the reference date and M5 horizon
+  RECORDED at both accept ceremonies, calibration inherited by declaration with
+  `applied` CLEARED, the portfolio never inherited. A monolithic parent still
+  mints a monolithic child.
 - **R-SG1** — a post-solve rebuild DERIVES its scope from the plan of record,
   and a frame is ASSERTED (`standing_pins.assert_frame`), never assumed: no
   tolerance, unreadable fails SAFE, and no verdict ships from a mis-framed
@@ -553,6 +567,7 @@ REPORTED and deliberately NOT fixed.
 | 4B.11 | R-PD1 clause (5) is open; there is no optimality ROUTE — nobody can ASK | §5a.28-30 |
 | 4B.6b/c | §5a.15 the 14-day window is budget-starved at 200 orders; the prediction store's sweep is scoped by nothing | §5a.8-17 |
 | 4B.5–4B.7 | the two-solve baseline is not extended to forced-alternatives pricing; `EARLINESS_PREFERENCE` names a mechanism that no longer exists (§5a.20) | §5a.19-21 |
+| R4.2 | the picker still tags an accept child as monolithic; the what-if fails on every rolling board one seam earlier | §5a.264 · `r4-2-child-inheritance.md` |
 | R4.1 | two of four new slow tests cannot go red at fixture density; the ghost delta's denominator is a different model | §5a.257 · `r4-1-scope-frame.md` |
 | R4.0 | the what-if path shares the accept's monolithic assembler; C5-vs-R-T2's hold contract is MEASURED by R4.1 (no collision, 0 of 385) | §5a.250 · `r4-rolling-stack-recon.md` |
 | W2.2 | the bridge self-proof is only as strong as its specimen's feature coverage; the first-incumbent capture is unconditional on every solve | §5a.236 · `w2-dollar-story-rollups.md` |

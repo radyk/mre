@@ -1053,6 +1053,22 @@ def create_app(data_root: Path | str | None = None) -> FastAPI:
 # Workers (module-level so background tasks are picklable/testable)
 # ---------------------------------------------------------------------------
 
+def _parent_document(row: dict) -> Optional[dict]:
+    """The parent version's persisted document, for R-CH1 inheritance.
+
+    Returns None when it cannot be read — an unreadable parent means nothing is
+    inherited and the child is assembled exactly as it was before this ruling.
+    That is the SAFE direction: a child that under-declares is the old defect,
+    while a child assembled from a half-read parent would be a wrong one."""
+    try:
+        return json.loads(Path(row["document_path"]).read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — see docstring: absence, never a guess
+        logging.getLogger("mre.api").warning(
+            "R-CH1: could not read the parent document for %s — the child "
+            "inherits nothing", row.get("id"))
+        return None
+
+
 def _rolling_gesture_context(row: dict) -> tuple[Optional[set], list[dict]]:
     """For a ROLLING schedule (Session 4B.3c CU3), read the persisted document and
     return ``(window_op_ids, committed_pins)``:
@@ -1628,6 +1644,10 @@ def _execute_accept(registry: Registry, base_schedule: dict, req: "AcceptRequest
             out_dir, result.child_snapshot_id, run_id,
             runs_subdir="runs", parent_schedule_id=base_schedule["id"],
             standing_pin_ops=sp.standing_pin_ops(new_pins),
+            # R-CH1 (Session R4.2): a child of a rolling, calibrated parent is a
+            # rolling, calibrated child. Before this the accept called the
+            # MONOLITHIC assembler and the block was simply lost.
+            parent_document=_parent_document(base_schedule),
         )
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
@@ -1811,7 +1831,8 @@ def _execute_audit_accept(registry: Registry, base_schedule: dict,
             expect_delta_abs=req.expect_delta_abs)
         document = build_document_from_run(
             out_dir, result["child_snapshot_id"], run_id, runs_subdir="runs",
-            parent_schedule_id=base_schedule["id"])
+            parent_schedule_id=base_schedule["id"],
+            parent_document=_parent_document(base_schedule))   # R-CH1
         doc_path = _persist_document(document, out_dir)
         registry.register_schedule(
             schedule_id=document.schedule_id, run_id=run_id,

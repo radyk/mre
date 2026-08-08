@@ -190,6 +190,17 @@ def apply_planner_edit(
         module=ModuleCode.M5, purpose="planner-edit model build",
         config={"horizon_start": horizon_start.isoformat(),
                 "horizon_end": horizon_end.isoformat(),
+                # R-CH1 clause (2), Session R4.2 — THE CHILD'S RUN CONTEXT
+                # RECORDS WHAT DOWNSTREAM DERIVATION NEEDS. An accept run has no
+                # M3, so `derive_base_context` recovered no reference_date from
+                # a child's own run dir and nine of its eleven callers then
+                # built a model whose origin dragged back to the earliest
+                # release in the WHOLE PLANT — 35 days off the frame the
+                # planner's pin is expressed in, measured on `b5daba66` (R4.0
+                # §3.4). Recorded here, at the one site that actually used the
+                # value, rather than patched at the read sites.
+                "reference_date": (reference_date.isoformat()
+                                   if reference_date else None),
                 "pin_op": pin_op_id, "pin_resource": pin_resource_id,
                 "pin_start_min": pin_start_min},
         trigger="planner_edit", snapshot_id=child_snap_id, sink_dir=runs_dir,

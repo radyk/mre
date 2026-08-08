@@ -21256,3 +21256,164 @@ claim is true and is now stronger than the instrument that produced it could
 establish. Second, the figure **"20 of 20" does not reproduce as stated** — it
 is one board at `--n 4`, not "both correctly-framed boards", which at the
 default `--n 5` is 50 probes.
+
+
+## Amendment — 2026-08-08: R-CH1 — A CHILD IS THE SAME KIND OF THING AS ITS PARENT, AND SAYS WHERE IT CAME FROM (Session R4.2)
+
+Second fix session off the R4.0 dossier (docs/07 §5b), closing **D3** (the accept
+mints a monolithic, uncalibrated child of a rolling, calibrated parent) and **D4**
+(the lost reference date is unrecoverable downstream). R4.1 made the broken case
+LOUD; this session makes the child SOUND.
+
+### The ruling
+
+**(1) An accept on a rolling parent mints a ROLLING child.** The rolling block —
+window, frozen front, beyond-horizon tray, coarse zone and the boundary-move log
+as the parent carried them, updated only where the accepted edit itself changes
+them — is assembled into the child document, not dropped. A child of a rolling
+board that renders as monolithic is the defect class, not a degraded mode. Each
+bar's `commitment_state` and the two counts are DERIVED from the child's own
+placements against the inherited boundary, never copied: a bar the accept moved
+carries the state its new start earns.
+
+**THE MECHANISM IS INHERITANCE, NOT RE-DERIVATION**, and that is chosen over the
+obvious alternative — routing the accept through `assemble_rolling_document` —
+for a reason the ruling records. That function needs a `RollingView`, and a
+`RollingView` is the WINDOW SOLVE's own record: `status`, `gap`, `op_drivers`,
+`cost_ledger`, `incumbent_trail`, `earliness_tiebreak` are all statements about a
+solve an accept did not run. Manufacturing one would write the accept's re-solve
+telemetry into fields that mean "the rolling window solve's" — a provenance lie,
+and the "a default that ASSERTS manufactures a claim out of a gap" class (4B.23).
+What the child's own run genuinely produces, the monolithic assembler already
+renders correctly; what it cannot produce is metadata belonging to the LINEAGE
+rather than to this solve, and that is exactly what is inherited.
+
+**The inherited window is ASSERTED, not assumed** (R-SG1 clause 2, at the
+document layer). The tray and the window describe the parent's PLAN, and
+inheriting them is sound only because an accept's model is built over exactly the
+operations the published plan places (R-DP11) and so can neither admit nor drop a
+job. The child's placed-operation set is therefore checked against the parent's,
+with no tolerance, and a mismatch RAISES `ChildInheritanceError` rather than
+shipping a rolling block that is a statement about a different plan.
+
+**(2) The child's run context RECORDS what downstream derivation needs.**
+`reference_date` joins `solver_workers` and `solver_seed` as a recorded field, so
+`derive_base_context` recovers it from the child's own run dir without walking to
+a root. The fix is at the WRITE side, once, rather than at the eleven read sites;
+the two existing root-walk sites remain as written and the frame invariant
+(R-SG1 clause 2) remains the loud backstop for any child minted before this
+ruling. The read side gains ONE fallback, in the same function: M3 is the root
+pipeline's own statement of the reference date and still wins wherever it
+exists, so no base run's recovered context changes shape.
+
+**(3) Calibration is INHERITED BY DECLARATION**, per R-CAL1's own rule that
+calibration is declared including when the answer is no: the child carries the
+parent's profile by reference, with provenance naming the parent it was inherited
+from. It is not re-signed — the profile measures the plant's feel, which an
+accepted edit does not re-measure. **The three "what this solve did with it"
+fields are CLEARED**: `applied` has exactly one meaning under R-CAL1 ("the
+coefficients this solve actually took"), and an accept re-solve takes none of
+them — it runs at the sandbox's own deterministic budget and seed — so copying
+the block verbatim would state that the child ran at the calibrated budget.
+`window_solved` and `drift` go with it for the same reason. The provenance rides
+in the block's own `sentence`, which is the field every calibration surface
+already renders: a deliberate refusal to add a field, since `inherited_from`
+would be a contract shape change and the sentence carries the same fact where a
+planner will read it.
+
+**A parent that declares no calibration yields a child that declares none, and
+the absence is INHERITED rather than manufactured.** The child never states
+`absent` — "nobody has measured this plant" — from the mere fact that the parent
+document carries no block, because that is a claim about the plant made from a
+fact about our storage (the 4B.18 discipline).
+
+**(4) What is NOT inherited is stated, not implied.** The portfolio block is K
+deterministic searches at consecutive seeds and the ledger comparison between
+them (R-BK1); an accept runs ONE pinned re-solve, so the child carries no
+portfolio block, the parent's story stays reachable through lineage, and the
+summary screen's absent-portfolio state covers it.
+
+Origin: R4.0 §A3/§3.5 — both accept ceremonies calling the monolithic assembler
+by construction; the 35-day frame offset and 160 false refusals that one dateless
+child produced.
+
+### The third member of the class, found by censusing it
+
+The dossier named `planner_edit` as D4's seam. **The audit-accept ceremony
+recorded neither the reference date NOR the horizon** on its M5 model build, so
+an audit-accept child was not merely dateless: `_m5_horizon` on its own run dir
+raised *"M5 run evidence carries no horizon"* and every sandbox surface pointed at
+that child failed outright. Both are now recorded. This repo's own law —
+*a defect class fixed at one seam is not fixed* — landing on the dossier that
+quotes it.
+
+### What the end-to-end proof shows
+
+One real accept driven through `POST /schedules/{id}/accept` on a scratch copy of
+the gen-3 demo world (`tools/spikes/rolling_stack/p9_child_inheritance.py`). The
+child inherits the window (10/1 days), the frozen front, all 122 tray entries and
+the coarse zone; 386 of 386 placements are the accepted plan; calibration comes
+across `accepted` with the parent named in its sentence and `applied` cleared
+(parent True → child False); no portfolio; `reference_date` recoverable as
+`2026-01-05T00:00:00+00:00`.
+
+Then the gesture that started the arc, through the real feasibility endpoint:
+**the child's beat-one table is identical, probe for probe, to the correctly
+scoped parent's** — 32 probes, 22 possible, 10 impossible, **0 false refusals, 0
+false permissions, 0 typed frame errors**, against `b5daba66`'s 24 of 24
+impossible and 23 false sentences. Both columns of the 2×2 are non-empty on the
+child, which is the only reason the zeros mean anything.
+
+### The what-if path: assessed, and found broken one seam earlier
+
+R4.0 named `app.py`'s what-if as the same assembler class. Under this mechanism
+the assembler change there is one line — and it would be WRONG, because a
+scenario is a full pipeline re-run over its own horizon and does not place the
+parent's plan of record, so clause (1)'s frame check would correctly refuse it. A
+what-if of a rolling board needs rolling RE-DERIVATION, not inheritance, which is
+the standing *"pool service must become slice-aware"* debt.
+
+**And it never reaches that question. Measured this session: the what-if fails
+outright on every rolling board**, with `FileNotFoundError` on the snapshot copy,
+because `_execute_whatif` reads the RUN's minted snapshot id where the accept
+deliberately reads the SCHEDULE's (`snap-c0a720c2` against the rolling solve's
+`snap-rolling`); the accept was corrected for this in 4.0d and the what-if never
+was. On a rolling board the two ALWAYS differ. NOT FIXED — the brief walls it out
+— but the what-if fix is a session, not a line, and it is routed with that.
+
+### An instrument lesson, again on this session's own probe
+
+The W5 ladder's first target selection took the first eight active bars in
+document order. The document is sorted by start, so all eight sat in the same
+open morning and the whole ladder came back `possible`: **32 of 32, a 2×2 with an
+empty refusal row**, reporting zero false refusals from a set that contained no
+refusals at all. Caught by the denominator check the probe prints before its own
+verdict. Striding across the window puts probes against shift ends, where a
+refusal is earned — 22 passes and 10 refusals, both columns non-empty. **Three
+sessions, three empty denominators, three different modules.** The cheap defence
+is not more care; it is making every instrument state its own visibility before
+it states a result.
+
+### The controls
+
+Three clauses, three physical reverts, each named test proven RED and each
+restore verified byte-identical by sha256
+(`tools/spikes/rolling_stack/p10_ch1_controls.py`). The control script itself
+first failed to match its own anchor: `planner_edit.py` is CRLF and
+`schedule_assembler.py` is LF, so an anchor written with a bare newline reverts
+nothing and therefore proves nothing — this repo's per-file line-ending lesson
+(4A-(a)) landing on the tool written to prove things.
+
+### The predicate audit (R4.1's own artifacts, by the next session)
+
+Both hold at HEAD. `verify_gen3` identity half PASSES (digest `8071cdaa…`,
+ledger $1,667,467.80, contract 1.17). `p6_frame_catches` still RAISES
+`FrameMismatch` on `b5daba66` at 4x's exact specimen, offset −50,400 minutes.
+
+**And the gap is the same one R4.1 named in R4.0's instrument: a single cell.**
+`p6_frame_catches` has a denominator of one and proves only that the invariant
+FIRES; nothing in it shows the invariant stays silent where it should. Its
+complement is `p2_frame`, re-run here on gen-3: **25 probes, 7 refusals, 0 false,
+and `assert_frame` raised on none of them.** The pair is the 2×2 — fires on the
+mis-framed specimen, silent across 25 correctly-framed probes — and neither half
+establishes it alone.
